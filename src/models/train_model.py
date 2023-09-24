@@ -2,7 +2,6 @@ import torch
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import ExponentialLR
-from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import os
 import sys
@@ -19,7 +18,6 @@ class ModelTrainer:
         self.loss_fn = BCEWithLogitsLoss()
         self.optimizer = Adam(self.model.parameters(), lr=0.001)
         self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
-        self.train_dataset = None
 
     def train_model(self, train_dataset):
         step = 0
