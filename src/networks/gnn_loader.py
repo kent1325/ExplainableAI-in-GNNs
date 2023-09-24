@@ -34,9 +34,6 @@ class GCN(torch.nn.Module):
 
         return out
 
-    def count_parameters(self):
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
 
 class GAT(torch.nn.Module):
     def __init__(self, feature_size):
@@ -98,6 +95,3 @@ class GAT(torch.nn.Module):
         out = self.output(out)
 
         return out
-
-    def count_parameters(self):
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
