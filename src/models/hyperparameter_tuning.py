@@ -58,9 +58,9 @@ def objective_cv(trial, model, train_dataset):
             precision, recall, f1, accuracy, roc = calculate_metrics(
                 test_y_pred, test_y_true, epoch, "test"
             )
-            if epoch % 10 == 0 or epoch == 1:
-                print(
-                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
-                )
+            # if epoch % 10 == 0 or epoch == 1:
+            print(
+                f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
+            )
             scores.append(accuracy)
-        return np.mean(scores)
+    return np.mean(scores)

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     train_dataset = mutag_dataset[: int(len(mutag_dataset) * TRAIN_SIZE)]
     test_dataset = mutag_dataset[int(len(mutag_dataset) * TRAIN_SIZE) :]
 
-    model = GCN(mutag_dataset.num_features)
+    model = GAT(mutag_dataset.num_features)
     # print(model)
     # print(f"Number of parameters: {count_parameters(model)}")
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
         ),
-        n_trials=10,
+        n_trials=3,
         timeout=600,
     )
 
