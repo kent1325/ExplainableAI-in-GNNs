@@ -1,6 +1,5 @@
 import torch
 from torch.nn import BCEWithLogitsLoss
-from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import ExponentialLR
 import numpy as np
 import os
@@ -11,12 +10,12 @@ from settings.config import DEVICE
 
 
 class ModelTrainer:
-    def __init__(self, model):
+    def __init__(self, model, optimizer):
         super(ModelTrainer, self).__init__()
         self.model = model.to(DEVICE)
         self.weights = torch.tensor([1.0], dtype=torch.float32).to(DEVICE)
         self.loss_fn = BCEWithLogitsLoss()
-        self.optimizer = Adam(self.model.parameters(), lr=0.001)
+        self.optimizer = optimizer
         self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
 
     def train_model(self, train_dataset):
