@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.metrics import confusion_matrix
 from torch.utils.data import SubsetRandomSampler
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.loader import DataLoader
@@ -18,8 +19,8 @@ def objective_cv(trial, model, train_dataset):
     scores = []
 
     # Generate the optimizers.
-    optimizer_name = trial.suggest_categorical("optimizer", ["Adam", "RMSprop", "SGD"])
-    lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
+    optimizer_name = trial.suggest_categorical("optimizer", ["Adam"])
+    lr = trial.suggest_float("lr", 1e-5, 1, log=True)
     optimizer = getattr(optim, optimizer_name)(model.parameters(), lr=lr)
 
     model_trainer = ModelTrainer(model, optimizer)
@@ -58,9 +59,11 @@ def objective_cv(trial, model, train_dataset):
             precision, recall, f1, accuracy, roc = calculate_metrics(
                 test_y_pred, test_y_true, epoch, "test"
             )
-            # if epoch % 10 == 0 or epoch == 1:
-            print(
-                f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
-            )
+            if epoch % 10 == 0 or epoch == 1:
+                print(
+                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
+                )
+                print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+
             scores.append(accuracy)
     return np.mean(scores)
