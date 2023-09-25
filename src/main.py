@@ -17,6 +17,7 @@ from settings.config import (
     DOTENV_PATH,
     EPOCHS,
     SEED,
+    K_FOLDS,
 )
 
 
@@ -42,8 +43,8 @@ if __name__ == "__main__":
         int(len(mutag_dataset) * TRAIN_SIZE) + int(len(mutag_dataset) * TEST_SIZE) :
     ]
 
-    sk_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
-    for fold, (cv_train_idx, cv_test_idx) in enumerate(
+    sk_fold = StratifiedKFold(n_splits=K_FOLDS, shuffle=True, random_state=SEED)
+    for fold, (cv_train_idx, cv_validation_idx) in enumerate(
         sk_fold.split(train_dataset, train_dataset.y)
     ):
         print(f"\nFold: {fold}")
@@ -53,10 +54,10 @@ if __name__ == "__main__":
             batch_size=GRAPH_BATCH_SIZE,
             sampler=SubsetRandomSampler(cv_train_idx),
         )
-        cv_test_loader = DataLoader(
+        cv_validation_loader = DataLoader(
             dataset=train_dataset,
             batch_size=GRAPH_BATCH_SIZE,
-            sampler=SubsetRandomSampler(cv_test_idx),
+            sampler=SubsetRandomSampler(cv_validation_idx),
         )
         for epoch in range(1, EPOCHS):
             model.train()
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
                 model.eval()
                 test_loss, test_y_pred, test_y_true = model_tester.test_model(
-                    cv_test_loader
+                    cv_validation_loader
                 )
                 # calculate_metrics(test_y_pred, test_y_true, epoch, "test")
                 print(f"Epoch {epoch} | Test Loss: {test_loss:.3f}")

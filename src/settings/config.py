@@ -13,4 +13,4 @@ TEST_SIZE = 0.15
 DOTENV_PATH = os.path.normpath(os.path.join(ROOT_PATH, ".env"))
 EPOCHS = 101
 SEED = 12345
-SEEDS = [12345, 54321, 13245]
+K_FOLDS = 5
