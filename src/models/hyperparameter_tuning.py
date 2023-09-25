@@ -1,4 +1,5 @@
 import numpy as np
+import optuna
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import SubsetRandomSampler
 from sklearn.model_selection import StratifiedKFold
@@ -19,7 +20,7 @@ def objective_cv(trial, model, train_dataset):
     scores = []
 
     # Generate the optimizers.
-    optimizer_name = trial.suggest_categorical("optimizer", ["Adam"])
+    optimizer_name = trial.suggest_categorical("optimizer", ["Adam", "SGD", "RMSprop"])
     lr = trial.suggest_float("lr", 1e-5, 1, log=True)
     optimizer = getattr(optim, optimizer_name)(model.parameters(), lr=lr)
 
@@ -64,6 +65,8 @@ def objective_cv(trial, model, train_dataset):
                     f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
                 )
                 print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
-
+            # Handle pruning based on the intermediate value.
+            if trial.should_prune():
+                raise optuna.exceptions.TrialPruned()
             scores.append(accuracy)
     return np.mean(scores)

@@ -13,8 +13,8 @@ class ModelTrainer:
     def __init__(self, model, optimizer):
         super(ModelTrainer, self).__init__()
         self.model = model.to(DEVICE)
-        self.weights = torch.tensor([1.0], dtype=torch.float32).to(DEVICE)
-        self.loss_fn = BCEWithLogitsLoss()
+        self.weights = torch.tensor([0.36], dtype=torch.float32).to(DEVICE)
+        self.loss_fn = BCEWithLogitsLoss(pos_weight=self.weights)
         self.optimizer = optimizer
         self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
 
