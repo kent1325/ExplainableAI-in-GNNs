@@ -1,6 +1,5 @@
 import torch
 from torch.nn import BCEWithLogitsLoss
-from torch.optim.lr_scheduler import ExponentialLR
 import numpy as np
 import os
 import sys
@@ -10,13 +9,13 @@ from settings.config import DEVICE
 
 
 class ModelTrainer:
-    def __init__(self, model, optimizer):
+    def __init__(self, model, optimizer, scheduler):
         super(ModelTrainer, self).__init__()
         self.model = model.to(DEVICE)
         self.weights = torch.tensor([0.36], dtype=torch.float32).to(DEVICE)
         self.loss_fn = BCEWithLogitsLoss(pos_weight=self.weights)
         self.optimizer = optimizer
-        self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
+        self.scheduler = scheduler
 
     def train_model(self, train_dataset):
         step = 0
@@ -37,6 +36,7 @@ class ModelTrainer:
             )
             y_true.append(batch.y.detach().cpu().numpy())
 
+        self.scheduler.step()
         y_pred = np.concatenate(y_pred).ravel()
         y_true = np.concatenate(y_true).ravel()
 
