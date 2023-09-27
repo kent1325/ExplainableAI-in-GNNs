@@ -3,7 +3,8 @@ import numpy as np
 import datetime
 import os
 
-import plot_settings
+#from settings.config import ROOT_PATH
+#import visualization.plot_settings
 
 class Plot:
     """Parent class for plotting.
@@ -46,11 +47,12 @@ class Plot:
         version = 1
         file_extension = ".png"
         date = datetime.date.today().strftime("%d-%m-%Y")
-        path = "./figures/"   # Check path here
-        full_path = os.path.join(path, f"{filename}_{date}_ver{version+file_extension}")
+        dest_folder = f"./reports/figures/{date}/"   # Should be changed to root path when testing is finished
+        full_path = os.path.join(dest_folder, f"{filename}_ver_{version}{file_extension}")
 
         for i in range(0, 15): 
-            if not os.path.exists(full_path) or overwrite:
+            if not os.path.exists(dest_folder) or overwrite:
+                os.makedirs(dest_folder)
                 plt.savefig(full_path, bbox_inches="tight")
             else:
                 if i < 15:
@@ -94,6 +96,6 @@ class LinePlot(Plot):
         plt.show() # Show plot - for testing
         
 
-x_data = np.array([[1, 3, 5], [3, 7, 5]])
-line_plot = LinePlot(x_data, "X", "Y", "Test titel", ["Test label", "Test label 2"])
-line_plot.lineplot()
+#x_data = np.array([[1, 3, 5], [3, 7, 5]])
+#line_plot = LinePlot(x_data, "X", "Y", "Test titel", ["Test label", "Test label 2"])
+#line_plot.lineplot()

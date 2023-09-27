@@ -29,7 +29,8 @@ if __name__ == "__main__":
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
         ),
-        n_trials=100,
+        n_trials=1,
+        timeout=600,
     )
 
     pruned_trials = [
