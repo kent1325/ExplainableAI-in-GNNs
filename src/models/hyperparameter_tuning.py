@@ -16,16 +16,9 @@ from settings.config import (
     K_FOLDS,
 )
 
-
 def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores = []
-    accuracy_arr = np.zeros((K_FOLDS, (EPOCHS - 1)))
-    precision_arr = np.zeros((K_FOLDS, (EPOCHS - 1)))
-    recall_arr = np.zeros((K_FOLDS, (EPOCHS - 1)))
-    f1_arr = np.zeros((K_FOLDS, (EPOCHS - 1)))
-    roc_arr = np.zeros((K_FOLDS, (EPOCHS - 1)))
-    
 
     # Generate the optimizers.
     optimizer_name = trial.suggest_categorical("optimizer", ["Adam", "SGD", "RMSprop"])
@@ -57,7 +50,7 @@ def objective_cv(trial, model, train_dataset):
             train_loss, train_y_pred, train_y_true = model_trainer.train_model(
                 cv_train_loader
             )
-            precision, recall, f1, accuracy, roc = calculate_metrics(
+            _,_,_, train_accuracy,_ = calculate_metrics(
                 train_y_pred, train_y_true
             )
 
@@ -65,21 +58,19 @@ def objective_cv(trial, model, train_dataset):
             test_loss, test_y_pred, test_y_true = model_tester.test_model(
                 cv_validation_loader
             )
-            precision, recall, f1, accuracy, roc = calculate_metrics(
+            _,_,_, test_accuracy,_ = calculate_metrics(
                 test_y_pred, test_y_true
             )
             
-            results, labels = prepare_for_plotting(train_y_pred, train_y_true, precision_arr, recall_arr, accuracy_arr, f1_arr, roc_arr, "tuning", fold, epoch)
-            lineplot = LinePlot(results, "Error", "Epochs", "Training Erros", labels)
-            
             if epoch % 10 == 0 or epoch == 1:
                 print(
-                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
+                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {train_accuracy:.3f} | Test Acc: {test_accuracy:.3f}"
                 )
                 print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+            
             # Handle pruning based on the intermediate value.
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
-            scores.append(accuracy)
+            scores.append(test_accuracy)
             
-    return np.mean(scores), lineplot.lineplot()
+    return np.mean(scores)
