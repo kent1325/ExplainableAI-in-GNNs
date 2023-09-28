@@ -69,18 +69,17 @@ class LinePlot(Plot):
     Args:
         Plot (Class): Inherits methods and attributes from Plot
     """
-    def __init__(self, x, x_label, y_label, title, label):
+    def __init__(self, x: list, label: list, x_label: str, y_label: str, title: str):
         super().__init__(x_label, y_label, title)
         self.x = x
         self.label = label
         
     def lineplot(self) -> None:
-        """Lineplot generator function
-        """
+        # Create canvas
         fig, ax = super().plot()
         
         # Input values
-        for i in range(0, len(self.x)):
+        for i in range(len(self.x)):
             ax.plot(
                 self.x[i], 
                 marker = 'o',
@@ -93,9 +92,4 @@ class LinePlot(Plot):
             loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes
         )
         
-        plt.show() # Show plot - for testing
-        
-
-#x_data = np.array([[1, 3, 5], [3, 7, 5]])
-#line_plot = LinePlot(x_data, "X", "Y", "Test titel", ["Test label", "Test label 2"])
-#line_plot.lineplot()
+        plt.show() # Show plot - for testing purposes only
