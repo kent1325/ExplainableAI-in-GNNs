@@ -2,6 +2,7 @@ import os
 import torch
 import optuna
 from optuna.visualization import plot_optimization_history
+from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 from networks.gnn_loader import GAT, GCN
 from dotenv import load_dotenv
@@ -32,10 +33,9 @@ if __name__ == "__main__":
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
         ),
-        n_trials=5,
+        n_trials=3,
         timeout=600,
     )
-    plot_optimization_history(study).show()
 
     pruned_trials = [
         t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED
