@@ -58,7 +58,7 @@ def objective_cv(trial, model, train_dataset):
             train_loss, train_y_pred, train_y_true = model_trainer.train_model(
                 cv_train_loader
             )
-            _,_,_, train_accuracy,_ = calculate_metrics(
+            _,_,_, train_accuracy,_,_ = calculate_metrics(
                 train_y_pred, train_y_true
             )
 
@@ -66,7 +66,7 @@ def objective_cv(trial, model, train_dataset):
             test_loss, test_y_pred, test_y_true = model_tester.test_model(
                 cv_validation_loader
             )
-            _,_,_, test_accuracy,_ = calculate_metrics(
+            _,_,_, test_accuracy,_,_ = calculate_metrics(
                 test_y_pred, test_y_true
             )
             

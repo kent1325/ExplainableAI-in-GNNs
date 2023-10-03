@@ -11,6 +11,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
     confusion_matrix,
+    matthews_corrcoef
 )
 from settings.config import (
     EPOCHS,
@@ -37,7 +38,8 @@ def calculate_metrics(y_pred, y_true):
     f1 = f1_score(y_true, y_pred, zero_division=0)
     accuracy = accuracy_score(y_true, y_pred)
     roc = roc_auc_score(y_true, y_pred)
-    return precision, recall, f1, accuracy, roc
+    matthews = matthews_corrcoef(y_true, y_pred)
+    return precision, recall, f1, accuracy, roc, matthews
 
 def prepare_for_plotting(metric_storage: dict, metric_name: str, metric_value: float, type: str, epoch: int): 
     metric_storage[metric_name][(epoch - 1)] = metric_value
