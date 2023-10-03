@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import os
-
-#from settings.config import ROOT_PATH
-#import visualization.plot_settings
+from settings.config import ROOT_PATH
+import visualization.plot_settings
 
 class Plot:
     """Parent class for plotting.
@@ -37,7 +36,7 @@ class Plot:
         
         return fig, ax
         
-    def _export_figure(self, filename: str, overwrite: bool = True) -> None:
+    def export_figure(self, filename: str, overwrite: bool = True) -> None:
         """Exports the plot into a chosen folder.
 
         Args:
@@ -45,7 +44,7 @@ class Plot:
             overwrite (bool): Chooses saving behaviour -> overwrite existing (if any) plots or always create a new one
         """
         date = datetime.date.today().strftime("%d-%m-%Y")
-        dest_folder = f"./reports/figures/{date}/"
+        dest_folder = f"{ROOT_PATH}/reports/figures/{date}/"
 
         # Create folder if it does not exist
         os.makedirs(dest_folder, exist_ok=True)
@@ -62,7 +61,7 @@ class Plot:
         
         # Save the figure
         plt.savefig(full_path, bbox_inches="tight")
-        print(f"Successfully exported '{filename+file_extension}'")
+        print(f"Successfully exported '{filename}_ver_{version}{file_extension}'")
 
         
 class LinePlot(Plot):

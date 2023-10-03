@@ -1,13 +1,15 @@
 import os
 import torch
 import optuna
-from optuna.visualization import plot_optimization_history
+import numpy as np
+from optuna.visualization.matplotlib import plot_optimization_history
 from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
 from networks.gnn_loader import GAT, GCN
 from dotenv import load_dotenv
 from utils.utils import (
+    calculate_metrics,
     count_parameters,
     model_saver,
     model_loader,
@@ -34,14 +36,13 @@ from settings.config import (
 )
 
 
-def run_kfold_cv(model, train_dataset, n_trials=1):
+def run_kfold_cv(model, train_dataset, n_trials=5):
     study = optuna.create_study(direction="maximize")
-
+    
     study.optimize(
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
         ),
-
         n_trials=n_trials,
     )
 
@@ -58,11 +59,14 @@ def run_kfold_cv(model, train_dataset, n_trials=1):
     print("  Number of complete trials: ", len(complete_trials))
 
     trial = study.best_trial
-    print("Best trial:", trial.number)
+    print(f"Best trial: {trial.number}")
     print("  Value: ", trial.value)
     print("  Params: ")
     for key, value in trial.params.items():
         print("    {}: {}".format(key, value))
+    
+    # Store Optuna plots 
+    Plot.export_figure(plot_optimization_history(study), "optuna_optimization_history", overwrite=True)
 
     return trial.params
 
@@ -108,21 +112,82 @@ if __name__ == "__main__":
     )
     model_tester = ModelTester(model)
 
+    # Dict for storing metric results
+    metric_results = {
+        "Train Accuracy": np.zeros((EPOCHS - 1)),
+        "Train Precision": np.zeros((EPOCHS - 1)),
+        "Train Recall": np.zeros((EPOCHS - 1)),
+        "Train F1": np.zeros((EPOCHS - 1)),
+        "Train Roc": np.zeros((EPOCHS - 1)),
+        "Test Accuracy": np.zeros((EPOCHS - 1)),
+        "Test Precision": np.zeros((EPOCHS - 1)),
+        "Test Recall": np.zeros((EPOCHS - 1)),
+        "Test F1": np.zeros((EPOCHS - 1)),
+        "Test Roc": np.zeros((EPOCHS - 1)),
+    }
+    
     if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
         for e in range(epoch, EPOCHS):
+            # Training phase
             model.train()
             train_loss, train_y_pred, train_y_true = model_trainer.train_model(
                 train_loader
             )
-            model_saver(e, model, FILE_NAME)
 
+            # Store metric results from training
+            precision, recall, f1, accuracy, roc = calculate_metrics(train_y_pred, train_y_true)
+            metric_results["Train Accuracy"][e - 1] = accuracy
+            metric_results["Train Precision"][e - 1] = precision
+            metric_results["Train Recall"][e - 1] = recall
+            metric_results["Train F1"][e - 1] = f1
+            metric_results["Train Roc"][e - 1] = roc
+
+            # Testing phase
+            model_saver(e, model, FILE_NAME)
             model.eval()
             test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
+            
+            # Store metric results from testing
+            precision, recall, f1, accuracy, roc = calculate_metrics(test_y_pred, test_y_true)
+            metric_results["Test Accuracy"][e - 1] = accuracy
+            metric_results["Test Precision"][e - 1] = precision
+            metric_results["Test Recall"][e - 1] = recall
+            metric_results["Test F1"][e - 1] = f1
+            metric_results["Test Roc"][e - 1] = roc
+            
+            # Print intermediate results
             if e % 10 == 0 or e == 1:
                 print(
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
                 )
                 print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+        
+        # Export plots
+        accuracy_lineplot = LinePlot(x_label="Epoch", y_label="Accuracy", title="Train/Test Accuracy").multi_lineplot(
+            [metric_results["Train Accuracy"], metric_results["Test Accuracy"]],
+            labels=["Train Accuracy", "Test Accuracy"]
+        )
+        precision_lineplot = LinePlot(x_label="Epoch", y_label="Precision", title="Train/Test Precision").multi_lineplot(
+            [metric_results["Train Precision"], metric_results["Test Precision"]],
+            labels=["Train Precision", "Test Precision"]
+        )
+        recall_lineplot = LinePlot(x_label="Epoch", y_label="Recall", title="Train/Test Recall").multi_lineplot(
+            [metric_results["Train Recall"], metric_results["Test Recall"]],
+            labels=["Train Recall", "Test Recall"]
+        )
+        f1_lineplot = LinePlot(x_label="Epoch", y_label="F1", title="Train/Test F1").multi_lineplot(
+            [metric_results["Train F1"], metric_results["Test F1"]],
+            labels=["Train F1", "Test F1"]
+        )
+        roc_lineplot = LinePlot(x_label="Epoch", y_label="ROC", title="Train/Test ROC").multi_lineplot(
+            [metric_results["Train Roc"], metric_results["Test Roc"]],
+            labels=["Train ROC", "Test ROC"]
+        )
+        Plot.export_figure(accuracy_lineplot, "train_accuracy", overwrite=True)
+        Plot.export_figure(precision_lineplot, "train_precision", overwrite=True)
+        Plot.export_figure(recall_lineplot, "train_recall", overwrite=True)
+        Plot.export_figure(f1_lineplot, "train_f1", overwrite=True)
+        Plot.export_figure(roc_lineplot, "train_roc", overwrite=True)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
