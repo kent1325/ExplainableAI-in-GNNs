@@ -90,7 +90,7 @@ class LinePlot(Plot):
             loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes
         )
     
-    def multi_lineplot(self, lines, labels: list) -> None:
+    def multi_lineplot(self, lines, labels) -> None:
         # Create canvas
         fig, ax = super().plot()
         

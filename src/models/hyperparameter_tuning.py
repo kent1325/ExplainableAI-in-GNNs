@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.loader import DataLoader
 import torch.optim as optim
-from utils.utils import calculate_metrics, reset_weights, prepare_for_plotting
+from utils.utils import calculate_metrics, reset_weights
 from visualization.visualize import LinePlot
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
