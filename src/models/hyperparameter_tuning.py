@@ -6,7 +6,8 @@ from torch.optim.lr_scheduler import ExponentialLR
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.loader import DataLoader
 import torch.optim as optim
-from utils.utils import calculate_metrics, reset_weights
+from utils.utils import calculate_metrics, reset_weights, prepare_for_plotting
+from visualization.visualize import LinePlot
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
 from settings.config import (
@@ -16,8 +17,8 @@ from settings.config import (
     K_FOLDS,
 )
 
-
 def objective_cv(trial, model, train_dataset):
+    # Create arrays for storing results.
     scores = []
     sk_fold = StratifiedKFold(n_splits=K_FOLDS, shuffle=True, random_state=SEED)
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
@@ -57,24 +58,27 @@ def objective_cv(trial, model, train_dataset):
             train_loss, train_y_pred, train_y_true = model_trainer.train_model(
                 cv_train_loader
             )
-            precision, recall, f1, accuracy, roc = calculate_metrics(
-                train_y_pred, train_y_true, epoch, "train"
+            _,_,_, train_accuracy,_ = calculate_metrics(
+                train_y_pred, train_y_true
             )
 
             model.eval()
             test_loss, test_y_pred, test_y_true = model_tester.test_model(
                 cv_validation_loader
             )
-            precision, recall, f1, accuracy, roc = calculate_metrics(
-                test_y_pred, test_y_true, epoch, "test"
+            _,_,_, test_accuracy,_ = calculate_metrics(
+                test_y_pred, test_y_true
             )
+            
             if epoch % 10 == 0 or epoch == 1:
                 print(
-                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {accuracy:.3f} | Test Acc: {accuracy:.3f}"
+                    f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {train_accuracy:.3f} | Test Acc: {test_accuracy:.3f}"
                 )
                 print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+            
             # Handle pruning based on the intermediate value.
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
-            scores.append(accuracy)
+            scores.append(test_accuracy)
+            
     return np.mean(scores)

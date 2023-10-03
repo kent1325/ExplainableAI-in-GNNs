@@ -3,7 +3,8 @@ import numpy as np
 import datetime
 import os
 
-import plot_settings
+#from settings.config import ROOT_PATH
+#import visualization.plot_settings
 
 class Plot:
     """Parent class for plotting.
@@ -43,21 +44,24 @@ class Plot:
             filename (str): The name of the figure.
             overwrite (bool): Chooses saving behaviour -> overwrite existing (if any) plots or always create a new one
         """
+        date = datetime.date.today().strftime("%d-%m-%Y")
+        dest_folder = f"./reports/figures/{date}/"
+
+        # Create folder if it does not exist
+        os.makedirs(dest_folder, exist_ok=True)
+
+        # Create full path
         version = 1
         file_extension = ".png"
-        date = datetime.date.today().strftime("%d-%m-%Y")
-        path = "./figures/"   # Check path here
-        full_path = os.path.join(path, f"{filename}_{date}_ver{version+file_extension}")
-
-        for i in range(0, 15): 
-            if not os.path.exists(full_path) or overwrite:
-                plt.savefig(full_path, bbox_inches="tight")
-            else:
-                if i < 15:
-                    version += 1
-                else:
-                    plt.savefig(full_path, bbox_inches="tight") # If 15 plots already exists, we overwrite the 15th and terminate loop
-
+        full_path = os.path.join(dest_folder, f"{filename}_ver_{version}{file_extension}")
+        
+        # Increment version number if version already exists
+        while not overwrite and os.path.exists(full_path):
+            version += 1
+            full_path = os.path.join(dest_folder, f"{filename}_ver_{version}{file_extension}")
+        
+        # Save the figure
+        plt.savefig(full_path, bbox_inches="tight")
         print(f"Successfully exported '{filename+file_extension}'")
 
         
@@ -67,33 +71,40 @@ class LinePlot(Plot):
     Args:
         Plot (Class): Inherits methods and attributes from Plot
     """
-    def __init__(self, x, x_label, y_label, title, label):
+    def __init__(self, x_label: str, y_label: str, title: str) -> None:
         super().__init__(x_label, y_label, title)
-        self.x = x
-        self.label = label
         
-    def lineplot(self) -> None:
-        """Lineplot generator function
-        """
+    def single_lineplot(self, x, label) -> None:
+        # Create canvas
         fig, ax = super().plot()
         
         # Input values
-        for i in range(0, len(self.x)):
-            ax.plot(
-                self.x[i], 
-                marker = 'o',
-                markersize = 3,
-                linewidth = 1.5,
-                label = self.label[i])
+        ax.plot(
+            x, 
+            marker = 'o',
+            markersize = 3,
+            linewidth = 1.5,
+            label = label)
         
         # Set legend
         fig.legend(
             loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes
         )
+    
+    def multi_lineplot(self, lines, labels: list) -> None:
+        # Create canvas
+        fig, ax = super().plot()
         
-        plt.show() # Show plot - for testing
+        # Input values
+        for i in range(len(lines)):
+            ax.plot(
+                lines[i], 
+                marker = 'o',
+                markersize = 3,
+                linewidth = 1.5,
+                label = labels[i])
         
-
-x_data = np.array([[1, 3, 5], [3, 7, 5]])
-line_plot = LinePlot(x_data, "X", "Y", "Test titel", ["Test label", "Test label 2"])
-line_plot.lineplot()
+        # Set legend
+        fig.legend(
+            loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes
+        )
