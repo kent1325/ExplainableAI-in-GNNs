@@ -2,7 +2,7 @@ import os
 import torch
 import optuna
 import numpy as np
-from optuna.visualization.matplotlib import plot_optimization_history
+import optuna.visualization.matplotlib as ovm
 from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
@@ -36,7 +36,7 @@ from settings.config import (
 )
 
 
-def run_kfold_cv(model, train_dataset, n_trials=5):
+def run_kfold_cv(model, train_dataset, n_trials=2):
     study = optuna.create_study(direction="maximize")
     
     study.optimize(
@@ -66,7 +66,12 @@ def run_kfold_cv(model, train_dataset, n_trials=5):
         print("    {}: {}".format(key, value))
     
     # Store Optuna plots 
-    Plot.export_figure(plot_optimization_history(study), "optuna_optimization_history", overwrite=True)
+    Plot.export_figure(ovm.plot_optimization_history(study), "optuna_optimization_history", overwrite=True)
+    Plot.export_figure(ovm.plot_param_importances(study), "hyperparameter_importance", overwrite=True)
+    Plot.export_figure(ovm.plot_parallel_coordinate(study), "parallel_coordinate", overwrite=True)
+    Plot.export_figure(ovm.plot_contour(study), "contour", overwrite=True)
+    Plot.export_figure(ovm.plot_edf(study), "edf", overwrite=True)
+    Plot.export_figure(ovm.plot_rank(study), "rank", overwrite=True)
 
     return trial.params
 
@@ -119,11 +124,13 @@ if __name__ == "__main__":
         "Train Recall": np.zeros((EPOCHS - 1)),
         "Train F1": np.zeros((EPOCHS - 1)),
         "Train Roc": np.zeros((EPOCHS - 1)),
+        "Train Matthews": np.zeros((EPOCHS - 1)),
         "Test Accuracy": np.zeros((EPOCHS - 1)),
         "Test Precision": np.zeros((EPOCHS - 1)),
         "Test Recall": np.zeros((EPOCHS - 1)),
         "Test F1": np.zeros((EPOCHS - 1)),
         "Test Roc": np.zeros((EPOCHS - 1)),
+        "Test Matthews": np.zeros((EPOCHS - 1)),
     }
     
     if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
@@ -135,12 +142,13 @@ if __name__ == "__main__":
             )
 
             # Store metric results from training
-            precision, recall, f1, accuracy, roc = calculate_metrics(train_y_pred, train_y_true)
+            precision, recall, f1, accuracy, roc, matthews = calculate_metrics(train_y_pred, train_y_true)
             metric_results["Train Accuracy"][e - 1] = accuracy
             metric_results["Train Precision"][e - 1] = precision
             metric_results["Train Recall"][e - 1] = recall
             metric_results["Train F1"][e - 1] = f1
             metric_results["Train Roc"][e - 1] = roc
+            #metric_results["Train Matthews"][e - 1] = matthews
 
             # Testing phase
             model_saver(e, model, FILE_NAME)
@@ -148,12 +156,13 @@ if __name__ == "__main__":
             test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
             
             # Store metric results from testing
-            precision, recall, f1, accuracy, roc = calculate_metrics(test_y_pred, test_y_true)
+            precision, recall, f1, accuracy, roc, matthews = calculate_metrics(test_y_pred, test_y_true)
             metric_results["Test Accuracy"][e - 1] = accuracy
             metric_results["Test Precision"][e - 1] = precision
             metric_results["Test Recall"][e - 1] = recall
             metric_results["Test F1"][e - 1] = f1
             metric_results["Test Roc"][e - 1] = roc
+            metric_results["Test Matthews"][e - 1] = matthews
             
             # Print intermediate results
             if e % 10 == 0 or e == 1:
@@ -183,11 +192,17 @@ if __name__ == "__main__":
             [metric_results["Train Roc"], metric_results["Test Roc"]],
             labels=["Train ROC", "Test ROC"]
         )
-        Plot.export_figure(accuracy_lineplot, "train_accuracy", overwrite=True)
-        Plot.export_figure(precision_lineplot, "train_precision", overwrite=True)
-        Plot.export_figure(recall_lineplot, "train_recall", overwrite=True)
-        Plot.export_figure(f1_lineplot, "train_f1", overwrite=True)
-        Plot.export_figure(roc_lineplot, "train_roc", overwrite=True)
+        matthews_lineplot = LinePlot(x_label="Epoch", y_label="Matthews Correlation Coefficient", title="Train/Test Matthew Correlation").multi_lineplot(
+            [metric_results["Train Matthews"] ,metric_results["Test Matthews"]],
+            labels = ["Train Matthews", "Test Matthews"]
+        )
+        
+        Plot.export_figure(accuracy_lineplot, "accuracy", overwrite=True)
+        Plot.export_figure(precision_lineplot, "precision", overwrite=True)
+        Plot.export_figure(recall_lineplot, "recall", overwrite=True)
+        Plot.export_figure(f1_lineplot, "f1", overwrite=True)
+        Plot.export_figure(roc_lineplot, "roc", overwrite=True)
+        Plot.export_figure(roc_lineplot, "matthews", overwrite=True)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
