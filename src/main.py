@@ -2,7 +2,6 @@ import os
 import torch
 import optuna
 import numpy as np
-import optuna.visualization.matplotlib as ovm
 from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
@@ -15,6 +14,10 @@ from utils.utils import (
     model_loader,
     hyperparameter_loader,
     hyperparameter_saver,
+    store_metric_results,
+    generate_plots,
+    generate_storage_dict,
+    generate_optuna_plots
 )
 from sklearn.metrics import confusion_matrix
 from models.hyperparameter_tuning import objective_cv
@@ -65,13 +68,8 @@ def run_kfold_cv(model, train_dataset, n_trials=2):
     for key, value in trial.params.items():
         print("    {}: {}".format(key, value))
     
-    # Store Optuna plots 
-    Plot.export_figure(ovm.plot_optimization_history(study), "optuna_optimization_history", overwrite=True)
-    Plot.export_figure(ovm.plot_param_importances(study), "hyperparameter_importance", overwrite=True)
-    Plot.export_figure(ovm.plot_parallel_coordinate(study), "parallel_coordinate", overwrite=True)
-    Plot.export_figure(ovm.plot_contour(study), "contour", overwrite=True)
-    Plot.export_figure(ovm.plot_edf(study), "edf", overwrite=True)
-    Plot.export_figure(ovm.plot_rank(study), "rank", overwrite=True)
+    # Generate optuna plots
+    generate_optuna_plots(study)
 
     return trial.params
 
@@ -118,20 +116,7 @@ if __name__ == "__main__":
     model_tester = ModelTester(model)
 
     # Dict for storing metric results
-    metric_results = {
-        "Train Accuracy": np.zeros((EPOCHS - 1)),
-        "Train Precision": np.zeros((EPOCHS - 1)),
-        "Train Recall": np.zeros((EPOCHS - 1)),
-        "Train F1": np.zeros((EPOCHS - 1)),
-        "Train Roc": np.zeros((EPOCHS - 1)),
-        "Train Matthews": np.zeros((EPOCHS - 1)),
-        "Test Accuracy": np.zeros((EPOCHS - 1)),
-        "Test Precision": np.zeros((EPOCHS - 1)),
-        "Test Recall": np.zeros((EPOCHS - 1)),
-        "Test F1": np.zeros((EPOCHS - 1)),
-        "Test Roc": np.zeros((EPOCHS - 1)),
-        "Test Matthews": np.zeros((EPOCHS - 1)),
-    }
+    metric_results_dict = generate_storage_dict(EPOCHS)
     
     if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
         for e in range(epoch, EPOCHS):
@@ -141,68 +126,19 @@ if __name__ == "__main__":
                 train_loader
             )
 
-            # Store metric results from training
-            precision, recall, f1, accuracy, roc, matthews = calculate_metrics(train_y_pred, train_y_true)
-            metric_results["Train Accuracy"][e - 1] = accuracy
-            metric_results["Train Precision"][e - 1] = precision
-            metric_results["Train Recall"][e - 1] = recall
-            metric_results["Train F1"][e - 1] = f1
-            metric_results["Train Roc"][e - 1] = roc
-            #metric_results["Train Matthews"][e - 1] = matthews
-
             # Testing phase
-            model_saver(e, model, FILE_NAME)
+            #model_saver(e, model, FILE_NAME)
             model.eval()
             test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
             
-            # Store metric results from testing
-            precision, recall, f1, accuracy, roc, matthews = calculate_metrics(test_y_pred, test_y_true)
-            metric_results["Test Accuracy"][e - 1] = accuracy
-            metric_results["Test Precision"][e - 1] = precision
-            metric_results["Test Recall"][e - 1] = recall
-            metric_results["Test F1"][e - 1] = f1
-            metric_results["Test Roc"][e - 1] = roc
-            metric_results["Test Matthews"][e - 1] = matthews
-            
-            # Print intermediate results
+            # Save and print intermediate results
+            store_metric_results(metric_results_dict, train_y_true, train_y_pred, test_y_true, test_y_pred, e)
             if e % 10 == 0 or e == 1:
                 print(
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
                 )
                 print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
-        
-        # Export plots
-        accuracy_lineplot = LinePlot(x_label="Epoch", y_label="Accuracy", title="Train/Test Accuracy").multi_lineplot(
-            [metric_results["Train Accuracy"], metric_results["Test Accuracy"]],
-            labels=["Train Accuracy", "Test Accuracy"]
-        )
-        precision_lineplot = LinePlot(x_label="Epoch", y_label="Precision", title="Train/Test Precision").multi_lineplot(
-            [metric_results["Train Precision"], metric_results["Test Precision"]],
-            labels=["Train Precision", "Test Precision"]
-        )
-        recall_lineplot = LinePlot(x_label="Epoch", y_label="Recall", title="Train/Test Recall").multi_lineplot(
-            [metric_results["Train Recall"], metric_results["Test Recall"]],
-            labels=["Train Recall", "Test Recall"]
-        )
-        f1_lineplot = LinePlot(x_label="Epoch", y_label="F1", title="Train/Test F1").multi_lineplot(
-            [metric_results["Train F1"], metric_results["Test F1"]],
-            labels=["Train F1", "Test F1"]
-        )
-        roc_lineplot = LinePlot(x_label="Epoch", y_label="ROC", title="Train/Test ROC").multi_lineplot(
-            [metric_results["Train Roc"], metric_results["Test Roc"]],
-            labels=["Train ROC", "Test ROC"]
-        )
-        matthews_lineplot = LinePlot(x_label="Epoch", y_label="Matthews Correlation Coefficient", title="Train/Test Matthew Correlation").multi_lineplot(
-            [metric_results["Train Matthews"] ,metric_results["Test Matthews"]],
-            labels = ["Train Matthews", "Test Matthews"]
-        )
-        
-        Plot.export_figure(accuracy_lineplot, "accuracy", overwrite=True)
-        Plot.export_figure(precision_lineplot, "precision", overwrite=True)
-        Plot.export_figure(recall_lineplot, "recall", overwrite=True)
-        Plot.export_figure(f1_lineplot, "f1", overwrite=True)
-        Plot.export_figure(roc_lineplot, "roc", overwrite=True)
-        Plot.export_figure(roc_lineplot, "matthews", overwrite=True)
+        generate_plots(metric_results_dict)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
