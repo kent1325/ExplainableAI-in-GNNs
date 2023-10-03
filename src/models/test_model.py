@@ -25,14 +25,11 @@ class ModelTester:
                 loss = self.loss_fn(torch.squeeze(predictions), batch.y.float())
                 running_loss += loss.item()
                 step += 1
-                y_pred.append(
-                    np.rint(
-                        torch.round(torch.sigmoid(predictions)).detach().cpu().numpy()
-                    )
-                )
-                y_true.append(batch.y.detach().cpu().numpy())
+                predictions.squeeze_()
+                y_pred.append(torch.round(torch.sigmoid(predictions.detach())))
+                y_true.append(batch.y.detach())
 
-            y_pred = np.concatenate(y_pred).ravel()
-            y_true = np.concatenate(y_true).ravel()
+            y_pred = torch.cat(y_pred)
+            y_true = torch.cat(y_true)
 
         return running_loss / step, y_pred, y_true
