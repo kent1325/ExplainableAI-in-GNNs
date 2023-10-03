@@ -4,6 +4,14 @@ import torch
 from datetime import datetime
 from settings.config import ROOT_PATH, CURRENT_DATE, DEVICE
 import numpy as np
+from torchmetrics import (
+    F1Score,
+    Accuracy,
+    Precision,
+    Recall,
+    AUROC,
+    MatthewsCorrCoef)
+
 from sklearn.metrics import (
     f1_score,
     accuracy_score,
@@ -33,12 +41,19 @@ metric_arrays = {
 }
 
 def calculate_metrics(y_pred, y_true):
-    precision = precision_score(y_true, y_pred, zero_division=0)
-    recall = recall_score(y_true, y_pred, zero_division=0)
-    f1 = f1_score(y_true, y_pred, zero_division=0)
-    accuracy = accuracy_score(y_true, y_pred)
-    roc = roc_auc_score(y_true, y_pred)
-    matthews = matthews_corrcoef(y_true, y_pred)
+    accuracy_fn = Accuracy(task="binary")
+    precision_fn = Precision(task="binary")
+    recall_fn = Recall(task="binary")
+    f1_fn = F1Score(task="binary")
+    auroc_fn = AUROC(task="binary")
+    matthews_fn = MatthewsCorrCoef(task="binary")
+    
+    precision = precision_fn(y_pred, y_true)
+    recall = recall_fn(y_pred, y_true)
+    f1 = f1_fn(y_pred, y_true)
+    accuracy = accuracy_fn(y_pred, y_true)
+    roc = auroc_fn(y_pred, y_true)
+    matthews = matthews_fn(y_pred, y_true)
     return precision, recall, f1, accuracy, roc, matthews
 
 def prepare_for_plotting(metric_storage: dict, metric_name: str, metric_value: float, type: str, epoch: int): 
