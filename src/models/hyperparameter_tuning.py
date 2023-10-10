@@ -1,5 +1,6 @@
 import numpy as np
 import optuna
+import torch
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import SubsetRandomSampler
 from torch.optim.lr_scheduler import ExponentialLR
@@ -81,4 +82,4 @@ def objective_cv(trial, model, train_dataset):
                 raise optuna.exceptions.TrialPruned()
             scores.append(test_accuracy)
             
-    return np.mean(scores)
+    return torch.mean(scores)
