@@ -137,9 +137,11 @@ if __name__ == "__main__":
                 print(
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
                 )
-                print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+                #Virker ikke på CUDA
+                #print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
         generate_plots(metric_results_dict)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
-        print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+        #Virker ikke på CUDA
+        # print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
