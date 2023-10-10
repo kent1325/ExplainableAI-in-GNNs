@@ -1,4 +1,3 @@
-import numpy as np
 import optuna
 import torch
 from sklearn.metrics import confusion_matrix
@@ -20,7 +19,7 @@ from settings.config import (
 
 def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
-    scores = []
+    scores_list = []
     sk_fold = StratifiedKFold(n_splits=K_FOLDS, shuffle=True, random_state=SEED)
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
         sk_fold.split(train_dataset, train_dataset.y)
@@ -70,16 +69,17 @@ def objective_cv(trial, model, train_dataset):
             _,_,_, test_accuracy,_,_ = calculate_metrics(
                 test_y_pred, test_y_true
             )
-            
+
             if epoch % 10 == 0 or epoch == 1:
                 print(
                     f"Epoch {epoch} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {train_accuracy:.3f} | Test Acc: {test_accuracy:.3f}"
                 )
-                print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+                #Confusion matrix doesnt work on CUDA
+                #print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
             
             # Handle pruning based on the intermediate value.
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
-            scores.append(test_accuracy)
-            
+            scores_list.append(test_accuracy)
+    scores = torch.tensor(scores_list)
     return torch.mean(scores)
