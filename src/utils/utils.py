@@ -37,12 +37,12 @@ def generate_optuna_plots(study):
     
 
 def calculate_metrics(y_pred, y_true):
-    accuracy_fn = Accuracy(task="binary")
-    precision_fn = Precision(task="binary")
-    recall_fn = Recall(task="binary")
-    f1_fn = F1Score(task="binary")
-    auroc_fn = AUROC(task="binary")
-    matthews_fn = MatthewsCorrCoef(task="binary")
+    accuracy_fn = Accuracy(task="binary").to(DEVICE)
+    precision_fn = Precision(task="binary").to(DEVICE)
+    recall_fn = Recall(task="binary").to(DEVICE)
+    f1_fn = F1Score(task="binary").to(DEVICE)
+    auroc_fn = AUROC(task="binary").to(DEVICE)
+    matthews_fn = MatthewsCorrCoef(task="binary").to(DEVICE)
     
     precision = precision_fn(y_pred, y_true)
     recall = recall_fn(y_pred, y_true)
