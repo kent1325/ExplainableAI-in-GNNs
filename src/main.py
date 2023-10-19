@@ -18,6 +18,7 @@ from utils.utils import (
     generate_plots,
     generate_storage_dict,
     generate_optuna_plots,
+    reset_weights
 )
 from sklearn.metrics import confusion_matrix
 from models.hyperparameter_tuning import objective_cv
@@ -120,6 +121,7 @@ if __name__ == "__main__":
     metric_results_dict = generate_storage_dict(EPOCHS)
 
     if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
+        model.apply(reset_weights)
         for e in range(epoch, EPOCHS):
             # Training phase
             model.train()

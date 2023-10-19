@@ -30,7 +30,7 @@ def objective_cv(trial, model, train_dataset):
         optimizer_name = trial.suggest_categorical(
             "optimizer", ["Adam", "SGD", "RMSprop"]
         )
-        lr = trial.suggest_float("lr", 1e-5, 1, log=True)
+        lr = trial.suggest_float("lr", 1e-5, 0.01, log=True)
         optimizer = getattr(optim, optimizer_name)(model.parameters(), lr=lr)
         scheduler_name = trial.suggest_categorical("scheduler", ["ExponentialLR"])
         scheduler_gamme = trial.suggest_float("scheduler_gamma", 0, 1)

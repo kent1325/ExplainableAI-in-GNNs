@@ -16,4 +16,4 @@ EPOCHS = 101
 SEED = 12345
 K_FOLDS = 5
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
-N_TRIALS = 20
+N_TRIALS = 100
