@@ -1,6 +1,7 @@
 import os
 import pickle
 import torch
+import warnings; warnings.filterwarnings("ignore")
 from datetime import datetime
 from settings.config import ROOT_PATH, CURRENT_DATE, DEVICE
 import numpy as np
