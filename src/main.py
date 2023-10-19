@@ -17,7 +17,7 @@ from utils.utils import (
     store_metric_results,
     generate_plots,
     generate_storage_dict,
-    generate_optuna_plots
+    generate_optuna_plots,
 )
 from sklearn.metrics import confusion_matrix
 from models.hyperparameter_tuning import objective_cv
@@ -36,12 +36,13 @@ from settings.config import (
     FILE_NAME,
     CURRENT_DATE,
     DO_TRAIN_MODEL,
+    N_TRIALS,
 )
 
 
-def run_kfold_cv(model, train_dataset, n_trials=2):
+def run_kfold_cv(model, train_dataset, n_trials):
     study = optuna.create_study(direction="maximize")
-    
+
     study.optimize(
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
@@ -55,7 +56,7 @@ def run_kfold_cv(model, train_dataset, n_trials=2):
     complete_trials = [
         t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
     ]
-    
+
     print("Study statistics: ")
     print("  Number of finished trials: ", len(study.trials))
     print("  Number of pruned trials: ", len(pruned_trials))
@@ -67,7 +68,7 @@ def run_kfold_cv(model, train_dataset, n_trials=2):
     print("  Params: ")
     for key, value in trial.params.items():
         print("    {}: {}".format(key, value))
-    
+
     # Generate optuna plots
     generate_optuna_plots(study)
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 
     # Perform k-fold cross validation to tune hyperparameters
     if DO_HYPERPARAMETER_TUNING:
-        hyperparameters = run_kfold_cv(model, train_dataset)
+        hyperparameters = run_kfold_cv(model, train_dataset, N_TRIALS)
         epoch = 1
         DO_TRAIN_MODEL = True
         hyperparameter_saver(FILE_NAME, hyperparameters)
@@ -117,7 +118,7 @@ if __name__ == "__main__":
 
     # Dict for storing metric results
     metric_results_dict = generate_storage_dict(EPOCHS)
-    
+
     if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
         for e in range(epoch, EPOCHS):
             # Training phase
@@ -127,21 +128,28 @@ if __name__ == "__main__":
             )
 
             # Testing phase
-            #model_saver(e, model, FILE_NAME)
+            # model_saver(e, model, FILE_NAME)
             model.eval()
             test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
-            
+
             # Save and print intermediate results
-            store_metric_results(metric_results_dict, train_y_true, train_y_pred, test_y_true, test_y_pred, e)
+            store_metric_results(
+                metric_results_dict,
+                train_y_true,
+                train_y_pred,
+                test_y_true,
+                test_y_pred,
+                e,
+            )
             if e % 10 == 0 or e == 1:
                 print(
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
                 )
-                #Virker ikke på CUDA
-                #print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+                # Virker ikke på CUDA
+                # print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
         generate_plots(metric_results_dict)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
-        #Virker ikke på CUDA
+        # Virker ikke på CUDA
         # print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
