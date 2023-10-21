@@ -42,8 +42,8 @@ from settings.config import (
 
 
 def run_kfold_cv(model, train_dataset, n_trials):
-    study = optuna.create_study(direction="maximize")
-
+    search_space = {"lr": [1e-4, 1e-2,  0.01], "optimizer": ["Adam", "SGD", "RMSprop"]}
+    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.GridSampler(search_space))
     study.optimize(
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
