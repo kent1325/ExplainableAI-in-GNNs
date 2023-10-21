@@ -14,22 +14,14 @@ class GCN(torch.nn.Module):
         # GCN Layers
         self.input = GCNConv(feature_size, embedding_size)
         self.conv1 = GCNConv(embedding_size, embedding_size)
-        self.conv2 = GCNConv(embedding_size, embedding_size)
-        self.conv3 = GCNConv(embedding_size, embedding_size)
-        self.output = Linear(embedding_size * 2, 1)
+        self.output = Linear(embedding_size, 1)
 
     def forward(self, x, edge_index, batch_index):
         out = self.input(x, edge_index)
         out = F.relu(out)
         out = self.conv1(out, edge_index)
         out = F.relu(out)
-        out = self.conv2(out, edge_index)
-        out = F.relu(out)
-        out = self.conv3(out, edge_index)
-        out = F.relu(out)
-
-        out = torch.cat([gmp(out, batch_index), gap(out, batch_index)], dim=1)
-
+        out = gap(out, batch_index)
         out = self.output(out)
 
         return out
@@ -60,7 +52,7 @@ class GAT(torch.nn.Module):
         self.pool3 = TopKPooling(embedding_size, ratio=0.2)
 
         # Linear layers
-        self.linear1 = Linear(embedding_size * 2, embedding_size)
+        self.linear1 = Linear(embedding_size, embedding_size)
         self.output = Linear(embedding_size, 1)
 
     def forward(self, x, edge_index, batch_index):
@@ -70,7 +62,7 @@ class GAT(torch.nn.Module):
             out, edge_index, None, batch_index
         )
 
-        out1 = torch.cat([gmp(out, batch_index), gap(out, batch_index)], dim=1)
+        out1 = gap(out, batch_index)
 
         out = self.conv1(out, edge_index)
         out = self.head_transform(out)
@@ -78,7 +70,7 @@ class GAT(torch.nn.Module):
             out, edge_index, None, batch_index
         )
 
-        out2 = torch.cat([gmp(out, batch_index), gap(out, batch_index)], dim=1)
+        out2 = gap(out, batch_index)
 
         out = self.conv2(out, edge_index)
         out = self.head_transform(out)
@@ -86,7 +78,7 @@ class GAT(torch.nn.Module):
             out, edge_index, None, batch_index
         )
 
-        out3 = torch.cat([gmp(out, batch_index), gap(out, batch_index)], dim=1)
+        out3 = gap(out, batch_index)
 
         out = out1 + out2 + out3
 
