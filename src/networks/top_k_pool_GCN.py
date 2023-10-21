@@ -14,6 +14,7 @@ class GCN_pool_layers(torch.nn.Module):
         # GCN Layers
         self.input = GCNConv(feature_size, embedding_size)
         self.pool1 = TopKPooling(embedding_size, ratio=0.8)
+        self.conv1 = GCNConv(embedding_size, embedding_size)
         self.output = Linear(embedding_size, 1)
 
     def forward(self, x, edge_index, batch_index):

@@ -9,13 +9,12 @@ from settings.config import DEVICE
 
 
 class ModelTrainer:
-    def __init__(self, model, optimizer, scheduler):
+    def __init__(self, model, optimizer):
         super(ModelTrainer, self).__init__()
         self.model = model.to(DEVICE)
         self.weights = torch.tensor([0.36], dtype=torch.float32).to(DEVICE)
         self.loss_fn = BCEWithLogitsLoss(pos_weight=self.weights)
         self.optimizer = optimizer
-        self.scheduler = scheduler
 
     def train_model(self, train_dataset):
         step = 0
@@ -34,7 +33,6 @@ class ModelTrainer:
             y_pred.append(torch.round(torch.sigmoid(predictions.detach())))
             y_true.append(batch.y.detach())
 
-        self.scheduler.step()
         y_pred = torch.cat(y_pred)
         y_true = torch.cat(y_true)
         

@@ -6,6 +6,7 @@ from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
 from networks.gnn_loader import GAT, GCN
+from networks.top_k_pool_GCN import GCN_pool_layers
 from dotenv import load_dotenv
 from utils.utils import (
     calculate_metrics,
@@ -22,7 +23,6 @@ from utils.utils import (
 )
 from sklearn.metrics import confusion_matrix
 from models.hyperparameter_tuning import objective_cv
-from torch.optim.lr_scheduler import ExponentialLR
 from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from models.train_model import ModelTrainer
@@ -106,14 +106,10 @@ if __name__ == "__main__":
     optimizer = getattr(optim, hyperparameters["optimizer"])(
         model.parameters(), lr=hyperparameters["lr"]
     )
-    scheduler = getattr(optim.lr_scheduler, hyperparameters["scheduler"])(
-        optimizer, gamma=hyperparameters["scheduler_gamma"]
-    )
-
+    print(f'Best params: {optimizer}')
     model_trainer = ModelTrainer(
         model,
-        optimizer=optimizer,
-        scheduler=scheduler,
+        optimizer=optimizer
     )
     model_tester = ModelTester(model)
 
