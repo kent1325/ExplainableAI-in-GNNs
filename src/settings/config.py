@@ -1,6 +1,7 @@
 import datetime
 import os
 import torch
+import optuna
 
 ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
@@ -16,4 +17,9 @@ EPOCHS = 101
 SEED = 12345
 K_FOLDS = 5
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
+
+#Sampler options
 N_TRIALS = 10
+SEARCH_SPACE = {"lr": [1e-4, 1e-2,  0.01], "optimizer": ["Adam", "SGD", "RMSprop"]}
+SAMPLER = optuna.samplers.GridSampler(SEARCH_SPACE)
+#SAMPLER = optuna.samplers.TPESampler()

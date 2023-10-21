@@ -38,12 +38,12 @@ from settings.config import (
     CURRENT_DATE,
     DO_TRAIN_MODEL,
     N_TRIALS,
+    SAMPLER
 )
 
 
 def run_kfold_cv(model, train_dataset, n_trials):
-    search_space = {"lr": [1e-4, 1e-2,  0.01], "optimizer": ["Adam", "SGD", "RMSprop"]}
-    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.GridSampler(search_space))
+    study = optuna.create_study(direction="maximize", sampler=SAMPLER)
     study.optimize(
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
