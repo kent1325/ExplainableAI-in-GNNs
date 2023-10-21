@@ -1,13 +1,11 @@
-import os
 import torch
 import optuna
-import numpy as np
-from visualization.visualize import Plot, LinePlot
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
 from networks.gnn_loader import GAT, GCN
 from networks.top_k_pool_GCN import GCN_pool_layers
 from dotenv import load_dotenv
+from torchmetrics.classification import BinaryConfusionMatrix
 from utils.utils import (
     calculate_metrics,
     count_parameters,
@@ -19,11 +17,9 @@ from utils.utils import (
     generate_plots,
     generate_storage_dict,
     generate_optuna_plots,
-    reset_weights
+    reset_weights,
 )
-from sklearn.metrics import confusion_matrix
 from models.hyperparameter_tuning import objective_cv
-from torch.optim import Adam
 from torch_geometric.loader import DataLoader
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
@@ -32,18 +28,21 @@ from settings.config import (
     DOTENV_PATH,
     SEED,
     EPOCHS,
-    GRAPH_BATCH_SIZE,
     DO_HYPERPARAMETER_TUNING,
     FILE_NAME,
     CURRENT_DATE,
     DO_TRAIN_MODEL,
     N_TRIALS,
-    SAMPLER
+    SAMPLER,
 )
 
 
 def run_kfold_cv(model, train_dataset, n_trials):
-    study = optuna.create_study(direction="maximize", sampler=SAMPLER)
+    study = optuna.create_study(
+        direction=optuna.study.StudyDirection.MAXIMIZE,
+        sampler=SAMPLER,
+        pruner=optuna.pruners.ThresholdPruner(lower=0.8, n_warmup_steps=2),
+    )
     study.optimize(
         lambda trial: objective_cv(
             trial=trial, model=model, train_dataset=train_dataset
@@ -88,29 +87,32 @@ if __name__ == "__main__":
     # print(f"Number of parameters: {count_parameters(model)}")
 
     # Perform k-fold cross validation to tune hyperparameters
+    epoch = 1
     if DO_HYPERPARAMETER_TUNING:
         hyperparameters = run_kfold_cv(model, train_dataset, N_TRIALS)
-        epoch = 1
         DO_TRAIN_MODEL = True
         hyperparameter_saver(FILE_NAME, hyperparameters)
     else:
-        epoch = EPOCHS - 1
-        checkpoint = model_loader(FILE_NAME, epoch, CURRENT_DATE)
-        model.load_state_dict(checkpoint["model_state"])
+        # epoch = EPOCHS - 1
+        # checkpoint = model_loader(FILE_NAME, epoch, CURRENT_DATE)
+        # model.load_state_dict(checkpoint["model_state"])
         hyperparameters = hyperparameter_loader(f"{FILE_NAME}_172515", CURRENT_DATE)
 
     # Train model with best hyperparameters and evaluate on test set
-    train_loader = DataLoader(dataset=train_dataset, batch_size=GRAPH_BATCH_SIZE)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=GRAPH_BATCH_SIZE)
+    train_loader = DataLoader(
+        dataset=train_dataset, batch_size=hyperparameters["graph_batch_size"]
+    )
+    test_loader = DataLoader(
+        dataset=test_dataset, batch_size=hyperparameters["graph_batch_size"]
+    )
 
     optimizer = getattr(optim, hyperparameters["optimizer"])(
-        model.parameters(), lr=hyperparameters["lr"]
+        model.parameters(),
+        lr=hyperparameters["lr"],
+        weight_decay=hyperparameters["weight_decay"],
     )
-    print(f'Best params: {optimizer}')
-    model_trainer = ModelTrainer(
-        model,
-        optimizer=optimizer
-    )
+    print(f"Best params: {optimizer}")
+    model_trainer = ModelTrainer(model, optimizer=optimizer)
     model_tester = ModelTester(model)
 
     # Dict for storing metric results
@@ -143,11 +145,13 @@ if __name__ == "__main__":
                 print(
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
                 )
-                # Virker ikke på CUDA
-                # print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+                print(
+                    torch.transpose(
+                        BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
+                    )
+                )
         generate_plots(metric_results_dict)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
-        # Virker ikke på CUDA
-        # print(confusion_matrix(test_y_true, test_y_pred, labels=[0, 1]))
+        print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
