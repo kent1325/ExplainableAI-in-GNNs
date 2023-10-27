@@ -7,6 +7,7 @@ from settings.config import ROOT_PATH, CURRENT_DATE, DEVICE
 import numpy as np
 from visualization.visualize import Plot, LinePlot
 import optuna.visualization.matplotlib as ovm
+from sklearn.model_selection import train_test_split
 from torchmetrics import (
     F1Score,
     Accuracy,
@@ -15,18 +16,6 @@ from torchmetrics import (
     AUROC,
     MatthewsCorrCoef)
 
-from sklearn.metrics import (
-    f1_score,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-    confusion_matrix,
-    matthews_corrcoef
-)
-from settings.config import (
-    K_FOLDS,
-)
 
 def generate_optuna_plots(study):
     Plot.export_figure(ovm.plot_optimization_history(study), "optuna_optimization_history", overwrite=True)
@@ -242,3 +231,11 @@ def hyperparameter_loader(filename: str, date: str):
     except Exception as e:
         print("Error loading hyperparameters: ", e)
         return None
+
+
+def train_test_splitter(dataset, train_size_percentage):
+    train_idx, test_idx = train_test_split(range(len(dataset)), test_size=0.2, stratify=dataset.y)
+    train_data = [dataset[i] for i in train_idx]
+    test_data = [dataset[i] for i in test_idx]
+    
+    return train_data, test_data

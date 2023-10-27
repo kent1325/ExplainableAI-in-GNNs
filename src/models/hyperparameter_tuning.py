@@ -19,9 +19,10 @@ from settings.config import (
 def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores_list = []
+    labels = [y_vals.y for y_vals in train_dataset]
     sk_fold = StratifiedKFold(n_splits=K_FOLDS, shuffle=True, random_state=SEED)
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
-        sk_fold.split(train_dataset, train_dataset.y)
+        sk_fold.split(train_dataset, labels)
     ):
         print(f"\nFold: {fold}")
         print("====================================")
