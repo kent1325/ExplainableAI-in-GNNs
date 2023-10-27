@@ -234,7 +234,7 @@ def hyperparameter_loader(filename: str, date: str):
 
 
 def train_test_splitter(dataset, train_size_percentage):
-    train_idx, test_idx = train_test_split(range(len(dataset)), test_size=0.2, stratify=dataset.y)
+    train_idx, test_idx = train_test_split(range(len(dataset)), train_size=train_size_percentage, stratify=dataset.y)
     train_data = [dataset[i] for i in train_idx]
     test_data = [dataset[i] for i in test_idx]
     
