@@ -8,7 +8,6 @@ import torch.nn.functional as F
 class GCN(torch.nn.Module):
     def __init__(self, feature_size):
         super(GCN, self).__init__()
-        torch.manual_seed(12345)
         embedding_size = 32
 
         # GCN Layers
@@ -30,7 +29,6 @@ class GCN(torch.nn.Module):
 class GAT(torch.nn.Module):
     def __init__(self, feature_size):
         super(GAT, self).__init__()
-        torch.manual_seed(12345)
         num_heads = 3
         embedding_size = 32
 

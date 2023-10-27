@@ -1,5 +1,5 @@
 import torch
-from torch.nn import BCEWithLogitsLoss
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 import numpy as np
 import os
 import sys
@@ -12,8 +12,8 @@ class ModelTrainer:
     def __init__(self, model, optimizer):
         super(ModelTrainer, self).__init__()
         self.model = model.to(DEVICE)
-        self.weights = torch.tensor([0.36], dtype=torch.float32).to(DEVICE)
-        self.loss_fn = BCEWithLogitsLoss(pos_weight=self.weights)
+        # self.weights = torch.tensor([0.36], dtype=torch.float32).to(DEVICE)
+        self.loss_fn = BCEWithLogitsLoss()
         self.optimizer = optimizer
 
     def train_model(self, train_dataset):
@@ -35,5 +35,5 @@ class ModelTrainer:
 
         y_pred = torch.cat(y_pred)
         y_true = torch.cat(y_true)
-        
+
         return running_loss / step, y_pred, y_true
