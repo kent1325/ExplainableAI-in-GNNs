@@ -41,7 +41,7 @@ def run_kfold_cv(model, train_dataset, n_trials):
     study = optuna.create_study(
         direction=optuna.study.StudyDirection.MAXIMIZE,
         sampler=SAMPLER,
-        pruner=optuna.pruners.ThresholdPruner(lower=0.8, n_warmup_steps=2),
+        pruner=optuna.pruners.SuccessiveHalvingPruner(),
     )
     study.optimize(
         lambda trial: objective_cv(
@@ -142,8 +142,14 @@ if __name__ == "__main__":
                 e,
             )
             if e % 10 == 0 or e == 1:
+                _, _, _, train_accuracy, _, _ = calculate_metrics(
+                    train_y_pred, train_y_true
+                )
+                _, _, _, test_accuracy, _, _ = calculate_metrics(
+                    test_y_pred, test_y_true
+                )
                 print(
-                    f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f}"
+                    f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {train_accuracy:.3f} | Test Acc: {test_accuracy:.3f}"
                 )
                 print(
                     torch.transpose(

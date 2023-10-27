@@ -17,7 +17,8 @@ from settings.config import (
 def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores_list = []
-    k_folds = trial.suggest_int("k_folds", 3, 10)
+    # k_folds = trial.suggest_int("k_folds", 3, 10)
+    k_folds = trial.suggest_categorical("k_folds", [3, 5, 8, 10])
     sk_fold = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=SEED)
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
         sk_fold.split(train_dataset, train_dataset.y)
@@ -29,11 +30,14 @@ def objective_cv(trial, model, train_dataset):
             "optimizer", ["Adam", "SGD", "RMSprop"]
         )
         lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
-        weight_decay = trial.suggest_float("weight_decay", 1e-10, 1e-4, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-10, 1e-6, log=True)
         optimizer = getattr(optim, optimizer_name)(
             model.parameters(), lr=lr, weight_decay=weight_decay
         )
-        graph_batch_size = trial.suggest_int("graph_batch_size", 4, 32)
+        # graph_batch_size = trial.suggest_int("graph_batch_size", 4, 32)
+        graph_batch_size = trial.suggest_categorical(
+            "graph_batch_size", [4, 8, 12, 16, 24, 32]
+        )
 
         model_trainer = ModelTrainer(model, optimizer)
         model_tester = ModelTester(model)
@@ -74,7 +78,7 @@ def objective_cv(trial, model, train_dataset):
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
-
+            trial.report(test_accuracy, epoch)
             # Handle pruning based on the intermediate value.
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
