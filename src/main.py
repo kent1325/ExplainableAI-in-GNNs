@@ -18,9 +18,11 @@ from utils.utils import (
     generate_storage_dict,
     generate_optuna_plots,
     reset_weights,
+    train_test_splitter,
 )
 from models.hyperparameter_tuning import objective_cv
 from torch_geometric.loader import DataLoader
+from torch_geometric.data import Data
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
 from settings.config import (
@@ -79,8 +81,7 @@ if __name__ == "__main__":
     load_dotenv(DOTENV_PATH)
     torch.manual_seed(SEED)
     mutag_dataset = MUTAGLoader().get_dataset().shuffle()
-    train_dataset = mutag_dataset[: int(len(mutag_dataset) * TRAIN_SIZE)]
-    test_dataset = mutag_dataset[int(len(mutag_dataset) * TRAIN_SIZE) :]
+    train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
 
     model = GCN(mutag_dataset.num_features)
     # print(model)

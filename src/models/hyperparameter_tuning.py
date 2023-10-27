@@ -17,11 +17,12 @@ from settings.config import (
 def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores_list = []
-    # k_folds = trial.suggest_int("k_folds", 3, 10)
+    labels = [y_vals.y for y_vals in train_dataset]
     k_folds = trial.suggest_categorical("k_folds", [3, 5, 8, 10])
     sk_fold = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=SEED)
+    
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
-        sk_fold.split(train_dataset, train_dataset.y)
+        sk_fold.split(train_dataset, labels)
     ):
         print(f"\nFold: {fold}")
         print("====================================")
