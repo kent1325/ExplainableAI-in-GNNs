@@ -22,7 +22,7 @@ EPOCHS = 101
 SEED = 12345
 
 # Sampler options
-N_TRIALS = 500
+N_TRIALS = 3
 # SEARCH_SPACE = {
 #     "lr": [1e-4, 1e-3, 1e-2, 1e-1],
 #     "optimizer": ["Adam", "SGD", "RMSprop"],

@@ -19,6 +19,7 @@ from utils.utils import (
     generate_optuna_plots,
     reset_weights,
     train_test_splitter,
+    generate_explainer_plots,
 )
 from models.hyperparameter_tuning import objective_cv
 from torch_geometric.loader import DataLoader
@@ -158,6 +159,7 @@ if __name__ == "__main__":
                     )
                 )
         generate_plots(metric_results_dict)
+        generate_explainer_plots(model, EPOCHS, test_dataset)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)

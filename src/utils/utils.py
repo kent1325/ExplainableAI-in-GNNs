@@ -10,13 +10,9 @@ import numpy as np
 from visualization.visualize import Plot, LinePlot
 import optuna.visualization.matplotlib as ovm
 from sklearn.model_selection import train_test_split
-from torchmetrics import (
-    F1Score,
-    Accuracy,
-    Precision,
-    Recall,
-    AUROC,
-    MatthewsCorrCoef)
+from torch_geometric.explain import GNNExplainer, Explainer
+from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
+
 
 def generate_optuna_plots(study):
     Plot.export_figure(
@@ -264,8 +260,29 @@ def hyperparameter_loader(filename: str, date: str):
 
 
 def train_test_splitter(dataset, train_size_percentage):
-    train_idx, test_idx = train_test_split(range(len(dataset)), train_size=train_size_percentage, stratify=dataset.y)
+    train_idx, test_idx = train_test_split(
+        range(len(dataset)), train_size=train_size_percentage, stratify=dataset.y
+    )
     train_data = [dataset[i] for i in train_idx]
     test_data = [dataset[i] for i in test_idx]
-    
+
     return train_data, test_data
+
+
+def generate_explainer_plots(model, epochs, dataset):
+    explainer = Explainer(
+        model=model,
+        algorithm=GNNExplainer(epochs=epochs),
+        explanation_type="model",
+        node_mask_type="attributes",
+        edge_mask_type="object",
+        model_config=dict(
+            mode="binary_classification",
+            task_level="graph",
+            return_type="probs",
+        ),
+        # Include only the top 10 most important edges:
+        threshold_config=dict(threshold_type="topk", value=10),
+    )
+    explantion = explainer(dataset[0].x, dataset[0].edge_index)
+    Plot.export_figure(explantion.visualize_graph(), "explainer_graph", overwrite=True)
