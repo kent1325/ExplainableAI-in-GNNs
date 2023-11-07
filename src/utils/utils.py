@@ -110,7 +110,7 @@ def generate_plots(metric_results):
         [metric_results["Train Accuracy"], metric_results["Test Accuracy"]],
         labels=["Train Accuracy", "Test Accuracy"],
     )
-    Plot.export_figure(accuracy_lineplot, "Accuracy", overwrite=False)
+    Plot.export_figure(accuracy_lineplot, "Accuracy", overwrite=True)
 
     precision_lineplot = LinePlot(
         x_label="Epoch", y_label="Precision", title="Train/Test Precision"
@@ -147,7 +147,9 @@ def generate_plots(metric_results):
     Plot.export_figure(matthews_lineplot, "Matthews_corr", overwrite=True)
 
     roc_lineplot = LinePlot(
-        x_label="Epoch", y_label="ROC", title="Train/Test ROC"
+        x_label="Epoch", 
+        y_label="ROC", 
+        title="Train/Test ROC"
     ).multi_lineplot(
         [metric_results["Train Roc"], metric_results["Test Roc"]],
         labels=["Train ROC", "Test ROC"],
@@ -284,5 +286,11 @@ def generate_explainer_plots(model, epochs, dataset):
         # Include only the top 10 most important edges:
         threshold_config=dict(threshold_type="topk", value=10),
     )
-    explantion = explainer(dataset[0].x, dataset[0].edge_index)
-    Plot.export_figure(explantion.visualize_graph(), "explainer_graph", overwrite=True)
+    
+    # Generate explanations
+    for batch in dataset:
+        explanation = explainer(batch.x.float(), batch.edge_index, target=batch.y.float(), batch_index=batch.batch)
+        explanation.visualize_feature_importance()
+        break # Only generate one explanation for now
+    
+    #Plot.export_figure(explanation.visualize_graph(), "explainer_graph", overwrite=True)

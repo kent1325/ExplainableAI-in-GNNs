@@ -24,6 +24,7 @@ from utils.utils import (
 from models.hyperparameter_tuning import objective_cv
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
+from torch_geometric.transforms import NormalizeFeatures
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
 from settings.config import (
@@ -82,7 +83,9 @@ if __name__ == "__main__":
     load_dotenv(DOTENV_PATH)
     torch.manual_seed(SEED)
     mutag_dataset = MUTAGLoader().get_dataset().shuffle()
-    train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
+    #train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
+    train_dataset = mutag_dataset[:150]
+    test_dataset = mutag_dataset[150:]
 
     model = GCN(mutag_dataset.num_features)
     # print(model)
@@ -98,7 +101,7 @@ if __name__ == "__main__":
         # epoch = EPOCHS - 1
         # checkpoint = model_loader(FILE_NAME, epoch, CURRENT_DATE)
         # model.load_state_dict(checkpoint["model_state"])
-        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_172515", CURRENT_DATE)
+        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_114712", CURRENT_DATE)
 
     # Train model with best hyperparameters and evaluate on test set
     train_loader = DataLoader(
@@ -158,9 +161,11 @@ if __name__ == "__main__":
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
+                
         generate_plots(metric_results_dict)
-        generate_explainer_plots(model, EPOCHS, test_dataset)
+        generate_explainer_plots(model, EPOCHS, test_loader)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
         print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
+        
