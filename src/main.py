@@ -83,9 +83,9 @@ if __name__ == "__main__":
     load_dotenv(DOTENV_PATH)
     torch.manual_seed(SEED)
     mutag_dataset = MUTAGLoader().get_dataset().shuffle()
-    #train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
-    train_dataset = mutag_dataset[:150]
-    test_dataset = mutag_dataset[150:]
+    train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
+    #train_dataset = mutag_dataset[:150]
+    #test_dataset = mutag_dataset[150:]
 
     model = GCN(mutag_dataset.num_features)
     # print(model)
@@ -162,10 +162,10 @@ if __name__ == "__main__":
                     )
                 )
                 
-        generate_plots(metric_results_dict)
-        generate_explainer_plots(model, EPOCHS, test_loader)
+        #generate_plots(metric_results_dict)
+        generate_explainer_plots(model, EPOCHS, test_dataset)
     else:
         model.eval()
-        test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
+        test_loss, test_y_pred, test_y_true = model_tester.test_model(test_dataset)
         print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
         

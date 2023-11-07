@@ -23,7 +23,7 @@ class GCN(torch.nn.Module):
         out = gap(out, batch_index)
         out = self.output(out)
 
-        return out
+        return F.sigmoid(out)
 
 
 class GAT(torch.nn.Module):

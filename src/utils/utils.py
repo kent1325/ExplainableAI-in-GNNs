@@ -288,9 +288,5 @@ def generate_explainer_plots(model, epochs, dataset):
     )
     
     # Generate explanations
-    for batch in dataset:
-        explanation = explainer(batch.x.float(), batch.edge_index, target=batch.y.float(), batch_index=batch.batch)
-        explanation.visualize_feature_importance()
-        break # Only generate one explanation for now
-    
-    #Plot.export_figure(explanation.visualize_graph(), "explainer_graph", overwrite=True)
+    explanation = explainer(dataset[5].x.float(), dataset[5].edge_index, target=dataset[5].y.float(), batch_index=None)
+    explanation.visualize_feature_importance()
