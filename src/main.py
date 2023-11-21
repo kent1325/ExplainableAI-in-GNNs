@@ -36,6 +36,7 @@ from settings.config import (
     DO_TRAIN_MODEL,
     N_TRIALS,
     SAMPLER,
+    DEVICE,
 )
 
 
@@ -80,24 +81,22 @@ def run_kfold_cv(model, train_dataset, n_trials):
 if __name__ == "__main__":
     load_dotenv(DOTENV_PATH)
     torch.manual_seed(SEED)
-    mutag_dataset = MUTAGLoader().get_dataset().shuffle()
-    train_dataset, test_dataset = train_test_splitter(mutag_dataset, TRAIN_SIZE)
+    mutag_dataset = MUTAGLoader().get_dataset()
+    train_dataset, test_dataset = train_test_splitter(
+        mutag_dataset, TRAIN_SIZE, seed=SEED
+    )
 
-    model = GCN(mutag_dataset.num_features)
+    model = GCN(mutag_dataset.num_features).to(device=DEVICE)
     # print(model)
     # print(f"Number of parameters: {count_parameters(model)}")
 
     # Perform k-fold cross validation to tune hyperparameters
-    epoch = 1
     if DO_HYPERPARAMETER_TUNING:
         hyperparameters = run_kfold_cv(model, train_dataset, N_TRIALS)
         DO_TRAIN_MODEL = True
         hyperparameter_saver(FILE_NAME, hyperparameters)
     else:
-        # epoch = EPOCHS - 1
-        # checkpoint = model_loader(FILE_NAME, epoch, CURRENT_DATE)
-        # model.load_state_dict(checkpoint["model_state"])
-        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_172515", CURRENT_DATE)
+        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_154003", CURRENT_DATE)
 
     # Train model with best hyperparameters and evaluate on test set
     train_loader = DataLoader(
@@ -119,9 +118,9 @@ if __name__ == "__main__":
     # Dict for storing metric results
     metric_results_dict = generate_storage_dict(EPOCHS)
 
-    if DO_TRAIN_MODEL and epoch < (EPOCHS - 1):
+    if DO_TRAIN_MODEL:
         model.apply(reset_weights)
-        for e in range(epoch, EPOCHS):
+        for e in range(1, EPOCHS):
             # Training phase
             model.train()
             train_loss, train_y_pred, train_y_true = model_trainer.train_model(
@@ -157,7 +156,7 @@ if __name__ == "__main__":
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
-        generate_plots(metric_results_dict)
+        generate_plots(metric_results_dict, overwrite=False)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)

@@ -10,13 +10,8 @@ import numpy as np
 from visualization.visualize import Plot, LinePlot
 import optuna.visualization.matplotlib as ovm
 from sklearn.model_selection import train_test_split
-from torchmetrics import (
-    F1Score,
-    Accuracy,
-    Precision,
-    Recall,
-    AUROC,
-    MatthewsCorrCoef)
+from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
+
 
 def generate_optuna_plots(study):
     Plot.export_figure(
@@ -106,7 +101,7 @@ def store_metric_results(
     metric_results["Test Matthews"][e - 1] = test_matthews
 
 
-def generate_plots(metric_results):
+def generate_plots(metric_results, overwrite=False):
     # Export plots
     accuracy_lineplot = LinePlot(
         x_label="Epoch", y_label="Accuracy", title="Train/Test Accuracy"
@@ -114,7 +109,7 @@ def generate_plots(metric_results):
         [metric_results["Train Accuracy"], metric_results["Test Accuracy"]],
         labels=["Train Accuracy", "Test Accuracy"],
     )
-    Plot.export_figure(accuracy_lineplot, "Accuracy", overwrite=False)
+    Plot.export_figure(accuracy_lineplot, "Accuracy", overwrite=overwrite)
 
     precision_lineplot = LinePlot(
         x_label="Epoch", y_label="Precision", title="Train/Test Precision"
@@ -122,7 +117,7 @@ def generate_plots(metric_results):
         [metric_results["Train Precision"], metric_results["Test Precision"]],
         labels=["Train Precision", "Test Precision"],
     )
-    Plot.export_figure(precision_lineplot, "Precision", overwrite=True)
+    Plot.export_figure(precision_lineplot, "Precision", overwrite=overwrite)
 
     recall_lineplot = LinePlot(
         x_label="Epoch", y_label="Recall", title="Train/Test Recall"
@@ -130,7 +125,7 @@ def generate_plots(metric_results):
         [metric_results["Train Recall"], metric_results["Test Recall"]],
         labels=["Train Recall", "Test Recall"],
     )
-    Plot.export_figure(recall_lineplot, "Recall", overwrite=True)
+    Plot.export_figure(recall_lineplot, "Recall", overwrite=overwrite)
 
     f1_lineplot = LinePlot(
         x_label="Epoch", y_label="F1", title="Train/Test F1"
@@ -138,7 +133,7 @@ def generate_plots(metric_results):
         [metric_results["Train F1"], metric_results["Test F1"]],
         labels=["Train F1", "Test F1"],
     )
-    Plot.export_figure(f1_lineplot, "F1", overwrite=True)
+    Plot.export_figure(f1_lineplot, "F1", overwrite=overwrite)
 
     matthews_lineplot = LinePlot(
         x_label="Epoch",
@@ -148,7 +143,7 @@ def generate_plots(metric_results):
         [metric_results["Train Matthews"], metric_results["Test Matthews"]],
         labels=["Train Matthews", "Test Matthews"],
     )
-    Plot.export_figure(matthews_lineplot, "Matthews_corr", overwrite=True)
+    Plot.export_figure(matthews_lineplot, "Matthews_corr", overwrite=overwrite)
 
     roc_lineplot = LinePlot(
         x_label="Epoch", y_label="ROC", title="Train/Test ROC"
@@ -156,7 +151,7 @@ def generate_plots(metric_results):
         [metric_results["Train Roc"], metric_results["Test Roc"]],
         labels=["Train ROC", "Test ROC"],
     )
-    Plot.export_figure(roc_lineplot, "ROC", overwrite=True)
+    Plot.export_figure(roc_lineplot, "ROC", overwrite=overwrite)
 
 
 def count_parameters(model):
@@ -263,9 +258,15 @@ def hyperparameter_loader(filename: str, date: str):
         return None
 
 
-def train_test_splitter(dataset, train_size_percentage):
-    train_idx, test_idx = train_test_split(range(len(dataset)), train_size=train_size_percentage, stratify=dataset.y)
+def train_test_splitter(dataset, train_size_percentage, seed=None):
+    train_idx, test_idx = train_test_split(
+        range(len(dataset)),
+        train_size=train_size_percentage,
+        stratify=dataset.y,
+        shuffle=True,
+        random_state=seed,
+    )
     train_data = [dataset[i] for i in train_idx]
     test_data = [dataset[i] for i in test_idx]
-    
+
     return train_data, test_data

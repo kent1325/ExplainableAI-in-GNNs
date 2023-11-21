@@ -20,7 +20,7 @@ def objective_cv(trial, model, train_dataset):
     labels = [y_vals.y for y_vals in train_dataset]
     k_folds = trial.suggest_categorical("k_folds", [3, 5, 8, 10])
     sk_fold = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=SEED)
-    
+
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
         sk_fold.split(train_dataset, labels)
     ):
@@ -79,8 +79,8 @@ def objective_cv(trial, model, train_dataset):
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
-            trial.report(test_accuracy, epoch)
             # Handle pruning based on the intermediate value.
+            trial.report(test_accuracy, epoch)
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
             scores_list.append(test_accuracy)
