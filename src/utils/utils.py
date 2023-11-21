@@ -7,10 +7,51 @@ warnings.filterwarnings("ignore")
 from datetime import datetime
 from settings.config import ROOT_PATH, CURRENT_DATE, DEVICE
 import numpy as np
-from visualization.visualize import Plot, LinePlot
+from visualization.visualize import Plot, LinePlot, CAMPlot
 import optuna.visualization.matplotlib as ovm
 from sklearn.model_selection import train_test_split
 from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
+from graphxai.explanation import CAM
+from graphxai.explainer_visualization import visualize_mol_explanation
+
+
+def generate_explanation_plots(mutag_dataset, model, overwrite=True):
+    for i, graph in enumerate(mutag_dataset):
+        model.eval()
+        with torch.no_grad():
+            prediction = model(
+                graph.x,
+                graph.edge_index,
+                batch_index=torch.zeros(
+                    1,
+                    dtype=torch.int64,
+                    device=DEVICE,
+                ),
+            )
+        predicted = prediction.argmax(dim=1).item()
+        act = lambda x: torch.argmax(x, dim=1)
+        cam = CAM(model, activation=act)
+        exp = cam.get_explanation_graph(
+            graph.x,
+            edge_index=graph.edge_index,
+            label=graph.y,
+            forward_kwargs={
+                "batch_index": torch.zeros(
+                    1,
+                    dtype=torch.int64,
+                    device=DEVICE,
+                )
+            },
+        )
+        # visualize_mol_explanation(
+        #     mol, exp.node_imp, atoms=atoms, ax=ax1, show=False, fig=fig
+        # )
+
+        # Export plots
+        cam_plot = CAMPlot(
+            x_label=None, y_label=None, title="Class Attention Map (CAM)"
+        ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
+        Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
 
 
 def generate_optuna_plots(study):

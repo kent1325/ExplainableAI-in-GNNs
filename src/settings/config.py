@@ -18,7 +18,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAIN_SIZE = 0.8
 DO_HYPERPARAMETER_TUNING = False
 DO_TRAIN_MODEL = True
-EPOCHS = 301
+EPOCHS = 101
 SEED = 42
 
 # Sampler options

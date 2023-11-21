@@ -17,6 +17,7 @@ from utils.utils import (
     generate_plots,
     generate_storage_dict,
     generate_optuna_plots,
+    generate_explanation_plots,
     reset_weights,
     train_test_splitter,
 )
@@ -157,6 +158,7 @@ if __name__ == "__main__":
                     )
                 )
         generate_plots(metric_results_dict, overwrite=False)
+        generate_explanation_plots(mutag_dataset, model, overwrite=True)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
