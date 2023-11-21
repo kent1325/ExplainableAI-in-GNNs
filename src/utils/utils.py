@@ -49,18 +49,18 @@ def calculate_metrics(y_pred, y_true):
 
 def generate_storage_dict(epochs):
     metric_results = {
-        "Train Accuracy": np.zeros((epochs - 1)),
-        "Train Precision": np.zeros((epochs - 1)),
-        "Train Recall": np.zeros((epochs - 1)),
-        "Train F1": np.zeros((epochs - 1)),
-        "Train Roc": np.zeros((epochs - 1)),
-        "Train Matthews": np.zeros((epochs - 1)),
-        "Test Accuracy": np.zeros((epochs - 1)),
-        "Test Precision": np.zeros((epochs - 1)),
-        "Test Recall": np.zeros((epochs - 1)),
-        "Test F1": np.zeros((epochs - 1)),
-        "Test Roc": np.zeros((epochs - 1)),
-        "Test Matthews": np.zeros((epochs - 1)),
+        "Train Accuracy": torch.zeros((epochs - 1)),
+        "Train Precision": torch.zeros((epochs - 1)),
+        "Train Recall": torch.zeros((epochs - 1)),
+        "Train F1": torch.zeros((epochs - 1)),
+        "Train Roc": torch.zeros((epochs - 1)),
+        "Train Matthews": torch.zeros((epochs - 1)),
+        "Test Accuracy": torch.zeros((epochs - 1)),
+        "Test Precision": torch.zeros((epochs - 1)),
+        "Test Recall": torch.zeros((epochs - 1)),
+        "Test F1": torch.zeros((epochs - 1)),
+        "Test Roc": torch.zeros((epochs - 1)),
+        "Test Matthews": torch.zeros((epochs - 1)),
     }
     return metric_results
 

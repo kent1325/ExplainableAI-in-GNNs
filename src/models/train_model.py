@@ -17,23 +17,23 @@ class ModelTrainer:
         self.optimizer = optimizer
 
     def train_model(self, train_dataset):
-        step = 0
-        running_loss = 0.0
-        y_pred, y_true = [], []
+        step = torch.tensor(0, dtype=torch.int32, device=DEVICE)
+        running_loss = torch.tensor(0.0, dtype=torch.float32, device=DEVICE)
+        y_pred, y_true = torch.tensor([], device=DEVICE), torch.tensor(
+            [], device=DEVICE
+        )
         for batch in train_dataset:
             batch.to(DEVICE)
             self.optimizer.zero_grad()
-            predictions = self.model(batch.x.float(), batch.edge_index, batch.batch)
-            loss = self.loss_fn(torch.squeeze(predictions), batch.y.float())
+            predictions = torch.squeeze(
+                self.model(batch.x.float(), batch.edge_index, batch.batch)
+            )
+            loss = self.loss_fn(predictions, batch.y.float())
             loss.backward()
             self.optimizer.step()
             running_loss += loss.item()
             step += 1
-            predictions.squeeze_()
-            y_pred.append(torch.round(torch.sigmoid(predictions.detach())))
-            y_true.append(batch.y.detach())
-
-        y_pred = torch.cat(y_pred)
-        y_true = torch.cat(y_true)
+            y_pred = torch.cat((y_pred, torch.round(torch.sigmoid(predictions))))
+            y_true = torch.cat((y_true, batch.y))
 
         return running_loss / step, y_pred, y_true

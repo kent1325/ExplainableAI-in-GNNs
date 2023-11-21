@@ -96,7 +96,7 @@ if __name__ == "__main__":
         DO_TRAIN_MODEL = True
         hyperparameter_saver(FILE_NAME, hyperparameters)
     else:
-        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_154003", CURRENT_DATE)
+        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_154003", "20231031")
 
     # Train model with best hyperparameters and evaluate on test set
     train_loader = DataLoader(
