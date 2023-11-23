@@ -33,11 +33,12 @@ from settings.config import (
     EPOCHS,
     DO_HYPERPARAMETER_TUNING,
     FILE_NAME,
-    CURRENT_DATE,
     DO_TRAIN_MODEL,
     N_TRIALS,
     SAMPLER,
     DEVICE,
+    PARAMETER_TIMESTAMP,
+    PARAMETER_DATE,
 )
 
 
@@ -97,7 +98,9 @@ if __name__ == "__main__":
         DO_TRAIN_MODEL = True
         hyperparameter_saver(FILE_NAME, hyperparameters)
     else:
-        hyperparameters = hyperparameter_loader(f"{FILE_NAME}_154003", "20231031")
+        hyperparameters = hyperparameter_loader(
+            f"{FILE_NAME}_{PARAMETER_TIMESTAMP}", PARAMETER_DATE
+        )
 
     # Train model with best hyperparameters and evaluate on test set
     train_loader = DataLoader(
@@ -158,7 +161,7 @@ if __name__ == "__main__":
                     )
                 )
         generate_plots(metric_results_dict, overwrite=False)
-        generate_explanation_plots(mutag_dataset, model, overwrite=True)
+        generate_explanation_plots(test_dataset, model, overwrite=True)
     else:
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)

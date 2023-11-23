@@ -133,9 +133,9 @@ class CAM(_BaseDecomposition):
         self.model = model
 
         # Set activation function
-        self.activation = (
-            lambda x: x if activation is None else activation
-        )  # i.e. linear activation if none provided
+        # self.activation = (
+        #     lambda x: x if activation is None else activation
+        # )  # i.e. linear activation if none provided
 
     def get_explanation_graph(
         self,
@@ -180,14 +180,14 @@ class CAM(_BaseDecomposition):
         )
 
         # Steps through model:
-        walk_steps, _ = self.extract_step(
+        walk_steps, fc_step = self.extract_step(
             x, edge_index, detach=True, split_fc=True, forward_kwargs=forward_kwargs
         )
 
         # Generate explanation for every node in graph
         node_explanations = []
         for n in range(N):
-            node_explanations.append(self.__exp_node(n, walk_steps, label))
+            node_explanations.append(self.__exp_node(n, fc_step, label))
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))

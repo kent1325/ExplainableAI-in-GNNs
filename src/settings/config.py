@@ -10,6 +10,8 @@ ROOT_PATH = os.path.normpath(
 DOTENV_PATH = os.path.normpath(os.path.join(ROOT_PATH, ".env"))
 FILE_NAME = "TestAcc"
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
+PARAMETER_TIMESTAMP = "130418"
+PARAMETER_DATE = CURRENT_DATE
 
 # Device settings
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,7 +24,7 @@ EPOCHS = 101
 SEED = 42
 
 # Sampler options
-N_TRIALS = 500
+N_TRIALS = 50
 # SEARCH_SPACE = {
 #     "lr": [1e-4, 1e-3, 1e-2, 1e-1],
 #     "optimizer": ["Adam", "SGD", "RMSprop"],

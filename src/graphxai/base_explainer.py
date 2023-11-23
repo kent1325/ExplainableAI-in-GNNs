@@ -406,10 +406,10 @@ class _BaseDecomposition(_BaseExplainer):
 
         # --- divide layer sets ---
 
-        print(
-            "layer extractor",
-            [layer_extractor[i][0] for i in range(len(layer_extractor))],
-        )
+        # print(
+        #     "layer extractor",
+        #     [layer_extractor[i][0] for i in range(len(layer_extractor))],
+        # )
 
         walk_steps = []
         fc_steps = []
