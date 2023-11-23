@@ -28,7 +28,7 @@ def generate_explanation_plots(mutag_dataset, model, overwrite=True):
                     device=DEVICE,
                 ),
             )
-        predicted = torch.round(torch.sigmoid(prediction).item())
+        predicted = torch.round(torch.sigmoid(prediction)).item()
         # act = lambda x: torch.round(torch.sigmoid(x))
         cam = CAM(model)
         exp = cam.get_explanation_graph(

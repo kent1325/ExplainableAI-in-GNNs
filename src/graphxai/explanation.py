@@ -187,7 +187,7 @@ class CAM(_BaseDecomposition):
         # Generate explanation for every node in graph
         node_explanations = []
         for n in range(N):
-            node_explanations.append(self.__exp_node(n, fc_step, label))
+            node_explanations.append(self.__exp_node(n, walk_steps, label))
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))
