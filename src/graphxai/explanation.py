@@ -4,6 +4,7 @@ from torch_geometric.utils.num_nodes import maybe_num_nodes
 from torch_geometric.nn import GCNConv, GINConv
 import torch.nn.functional as F
 from typing import Optional
+from sklearn import preprocessing
 import networkx as nx
 from graphxai.base_explainer import _BaseDecomposition
 from graphxai.explainer_visualization import to_networkx_conv, match_torch_to_nx_edges
@@ -89,7 +90,7 @@ class Explanation:
                 node_imp_heat = [agg_nodes(self.node_imp[n]) for n in G.nodes()]
                 # node_imp_map = {i:self.node_imp[i] for i in range(G.number_of_nodes())}
 
-            draw_args["node_color"] = node_imp_heat
+            draw_args["node_color"] = preprocessing.normalize([node_imp_heat])
 
             atom_list = ["C", "N", "O", "F", "I", "Cl", "Br"]
             atom_map = {i: atom_list[i] for i in range(len(atom_list))}
@@ -98,10 +99,23 @@ class Explanation:
                 atoms.append(atom_map[self.graph.x[i, :].tolist().index(1)])
             draw_args["labels"] = {i: atoms[i] for i in range(len(G.nodes))}
 
-        # Don't do anything for feature imp
         pos = nx.kamada_kawai_layout(G)
-        nx.draw(G, pos, ax=ax, **draw_args)
-        # nx.draw_networkx_labels(G, pos, labels=map, ax=ax)
+        ec = nx.draw_networkx_edges(G, pos, alpha=0.2)
+        lc = nx.draw_networkx_labels(
+            G, pos, labels=draw_args["labels"], font_weight="bold", font_color="w"
+        )
+        nc = nx.draw_networkx_nodes(
+            G,
+            pos,
+            ax=ax,
+            cmap=plt.cm.viridis,
+            node_size=500,
+            node_color=draw_args["node_color"],
+            vmin=0,
+            vmax=1,
+        )
+        plt.colorbar(nc)
+        plt.axis("off")
 
         if show:
             plt.show()
@@ -212,17 +226,14 @@ class CAM(_BaseDecomposition):
 
         if isinstance(last_conv_layer["module"][0], GINConv):
             weight_vec = (
-                last_conv_layer["module"][0].nn.weight[predicted_c, :].detach()
+                last_conv_layer["module"][0].nn.weight[node_idx, :].detach()
             )  # last_conv_layer['module'][0].lin.weight[predicted_c, :].detach()
         elif isinstance(last_conv_layer["module"][0], GCNConv):
-            weight_vec = (
-                last_conv_layer["module"][0].lin.weight[predicted_c, :].detach()
-            )
+            weight_vec = last_conv_layer["module"][0].lin.weight[node_idx, :].detach()
         elif isinstance(last_conv_layer["module"][0], torch.nn.Linear):
-            weight_vec = last_conv_layer["module"][0].weight[predicted_c, :].detach()
+            weight_vec = last_conv_layer["module"][0].weight[node_idx, :].detach()
 
         F_l_n = F.relu(last_conv_layer["input"][node_idx, :]).detach()
-
         L_cam_n = F.relu(torch.matmul(weight_vec, F_l_n))
 
         return L_cam_n.item()

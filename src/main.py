@@ -160,7 +160,7 @@ if __name__ == "__main__":
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
-        generate_plots(metric_results_dict, overwrite=False)
+        generate_plots(metric_results_dict, overwrite=True)
         generate_explanation_plots(test_dataset, model, overwrite=True)
     else:
         model.eval()

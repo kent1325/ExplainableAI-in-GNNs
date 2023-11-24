@@ -8,10 +8,10 @@ ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
 )
 DOTENV_PATH = os.path.normpath(os.path.join(ROOT_PATH, ".env"))
-FILE_NAME = "TestAcc"
+FILE_NAME = "testing_parameters"
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
-PARAMETER_TIMESTAMP = "130418"
-PARAMETER_DATE = CURRENT_DATE
+PARAMETER_TIMESTAMP = "105032"
+PARAMETER_DATE = "20231123"
 
 # Device settings
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
