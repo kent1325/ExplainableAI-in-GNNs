@@ -12,7 +12,6 @@ import optuna.visualization.matplotlib as ovm
 from sklearn.model_selection import train_test_split
 from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
 from graphxai.explanation import CAM
-from graphxai.explainer_visualization import visualize_mol_explanation
 
 
 def generate_explanation_plots(mutag_dataset, model, overwrite=True):
@@ -227,8 +226,10 @@ def model_saver(
     checkpoint = {
         "model_name": filename,
         "model_state": model.state_dict(),
+        "final_conv_acts": model.final_conv_acts,
+        "final_conv_grads": model.final_conv_grads,
     }
-    path = f"{ROOT_PATH}/models/{CURRENT_DATE}/"
+    path = f"{ROOT_PATH}/models/{CURRENT_DATE}/{filename}/"
     file_name = f"{filename}_epoch_{epoch}.pth.tar"
     try:
         if os.path.exists(path):
@@ -237,7 +238,7 @@ def model_saver(
         if not os.path.exists(path):
             os.makedirs(path)
             torch.save(checkpoint, path + file_name)
-        print(f"Model '{file_name}' is saved")
+        # print(f"Model '{file_name}' is saved")
     except Exception as e:
         print("Error saving model: ", e)
 
@@ -257,7 +258,7 @@ def model_loader(
     Returns:
         checkpoint (dict) : Returns a dictionary containing the model and optimizer states.
     """
-    path = f"{ROOT_PATH}/models/{date}/"
+    path = f"{ROOT_PATH}/models/{date}/{filename}/"
     file_name = f"{filename}_epoch_{epoch}.pth.tar"
     try:
         # Load model parameters

@@ -10,19 +10,28 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
         embedding_size = 32
 
+        # Explanation variables
+        self.final_conv_acts = None
+        self.final_conv_grads = None
+
         # GCN Layers
         self.input = GCNConv(feature_size, embedding_size)
         self.conv1 = GCNConv(embedding_size, embedding_size)
         self.conv2 = GCNConv(embedding_size, embedding_size)
         self.output = Linear(embedding_size, 1)
 
+    def activations_hook(self, grad):
+        self.final_conv_grads = grad
+
     def forward(self, x, edge_index, batch_index):
         out = self.input(x, edge_index)
         out = F.relu(out)
-        out = self.conv1(out, edge_index)
-        out = F.relu(out)
-        # out = self.conv2(out, edge_index)
+        # out = self.conv1(out, edge_index)
         # out = F.relu(out)
+        with torch.enable_grad():
+            self.final_conv_acts = self.conv1(out, edge_index)
+        self.final_conv_acts.register_hook(self.activations_hook)
+        out = F.relu(self.final_conv_acts)
         out = gap(out, batch_index)
         out = self.output(out)
 

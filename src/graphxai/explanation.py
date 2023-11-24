@@ -1,39 +1,14 @@
 import torch
 from torch_geometric.data import Data
 from torch_geometric.utils.num_nodes import maybe_num_nodes
-from torch_geometric.nn import GCNConv, GINConv
 import torch.nn.functional as F
 from typing import Optional
 from sklearn import preprocessing
 import networkx as nx
-from graphxai.base_explainer import _BaseDecomposition
-from graphxai.explainer_visualization import to_networkx_conv, match_torch_to_nx_edges
 import matplotlib.pyplot as plt
 
 
 class Explanation:
-    """
-    Members:
-        feature_imp (torch.Tensor): Feature importance scores
-            - Size: (x1,) with x1 = number of features
-        node_imp (torch.Tensor): Node importance scores
-            - Size: (n,) with n = number of nodes in subgraph or graph
-        edge_imp (torch.Tensor): Edge importance scores
-            - Size: (e,) with e = number of edges in subgraph or graph
-        node_idx (int): Index for node explained by this instance
-        node_reference (tensor of ints): Tensor matching length of `node_reference`
-            which maps each index onto original node in the graph
-        edge_reference (tensor of ints): Tensor maching lenght of `edge_reference`
-            which maps each index onto original edge in the graph's edge
-            index
-        graph (torch_geometric.data.Data): Original graph on which explanation
-            was computed
-            - Optional member, can be left None if graph is too large
-    Optional members:
-        enc_subgraph (Subgraph): k-hop subgraph around
-            - Corresponds to nodes and edges comprising computational graph around node
-    """
-
     def __init__(
         self,
         feature_imp: Optional[torch.tensor] = None,
@@ -74,21 +49,16 @@ class Explanation:
         if ax is None:
             ax = plt.gca()
 
-        G = to_networkx_conv(self.graph, to_undirected=True)
+        G = self.__to_networkx_conv(self.graph, to_undirected=True)
 
         draw_args = dict()
 
         # Node weights defined by node_imp:
         if self.node_imp is not None:
-            # Get node weights
-            # print('node imp shape', self.node_imp.shape)
-            # print('num nodes', len(list(G.nodes())))
             if isinstance(self.node_imp, torch.Tensor):
                 node_imp_heat = [agg_nodes(self.node_imp[n]).item() for n in G.nodes()]
-                # node_imp_map = {i:self.node_imp[i].item() for i in range(G.number_of_nodes())}
             else:
                 node_imp_heat = [agg_nodes(self.node_imp[n]) for n in G.nodes()]
-                # node_imp_map = {i:self.node_imp[i] for i in range(G.number_of_nodes())}
 
             draw_args["node_color"] = preprocessing.normalize([node_imp_heat])
 
@@ -122,34 +92,86 @@ class Explanation:
 
         return G, pos
 
+    def __to_networkx_conv(
+        self,
+        data,
+        node_attrs=None,
+        edge_attrs=None,
+        to_undirected=False,
+        remove_self_loops=False,
+        get_map=False,
+    ):
+        r"""Converts a :class:`torch_geometric.data.Data` instance to a
+        :obj:`networkx.Graph` if :attr:`to_undirected` is set to :obj:`True`, or
+        a directed :obj:`networkx.DiGraph` otherwise.
 
-class CAM(_BaseDecomposition):
+        Args:
+            data (torch_geometric.data.Data): The data object.
+            node_attrs (iterable of str, optional): The node attributes to be
+                copied. (default: :obj:`None`)
+            edge_attrs (iterable of str, optional): The edge attributes to be
+                copied. (default: :obj:`None`)
+            to_undirected (bool, optional): If set to :obj:`True`, will return a
+                a :obj:`networkx.Graph` instead of a :obj:`networkx.DiGraph`. The
+                undirected graph will correspond to the upper triangle of the
+                corresponding adjacency matrix. (default: :obj:`False`)
+            remove_self_loops (bool, optional): If set to :obj:`True`, will not
+                include self loops in the resulting graph. (default: :obj:`False`)
+            get_map (bool, optional): If `True`, returns a tuple where the second
+                element is a map from original node indices to new ones.
+                (default: :obj:`False`)
+        """
+        if to_undirected:
+            G = nx.Graph()
+        else:
+            G = nx.DiGraph()
+
+        node_list = sorted(torch.unique(data.edge_index).tolist())
+        map_norm = {node_list[i]: i for i in range(len(node_list))}
+        # rev_map_norm = {v:k for k, v in map_norm.items()}
+        G.add_nodes_from([map_norm[n] for n in node_list])
+
+        values = {}
+        for key, item in data:
+            if torch.is_tensor(item):
+                values[key] = item.squeeze().tolist()
+            else:
+                values[key] = item
+            if isinstance(values[key], (list, tuple)) and len(values[key]) == 1:
+                values[key] = item[0]
+
+        for i, (u, v) in enumerate(data.edge_index.t().tolist()):
+            u = map_norm[u]
+            v = map_norm[v]
+
+            if to_undirected and v > u:
+                continue
+
+            if remove_self_loops and u == v:
+                continue
+
+            G.add_edge(u, v)
+            for key in edge_attrs if edge_attrs is not None else []:
+                G[u][v][key] = values[key][i]
+
+        for key in node_attrs if node_attrs is not None else []:
+            for i, feat_dict in G.nodes(data=True):
+                feat_dict.update({key: values[key][i]})
+
+        if get_map:
+            return G, map_norm
+        else:
+            return G
+
+
+class CAM:
     """
     Class-Activation Mapping for GNNs
     """
 
-    def __init__(self, model: torch.nn.Module, activation=None):
-        """
-        .. note::
-            From Pope et al., CAM requires that the layer immediately before the softmax layer be
-            a global average pooling layer, or in the case of node classification, a graph convolutional
-            layer. Therefore, for this algorithm to theoretically work, there can be no fully-connected
-            layers after global pooling. There is no restriction in the code for this, but be warned.
-
-        Args:
-            model (torch.nn.Module): model on which to make predictions
-            activation (method, optional): activation funciton for final layer in network. If `activation = None`,
-                explainer assumes linear activation. Use `activation = None` if the activation is applied
-                within the `forward` method of `model`, only set this parameter if another activation is
-                applied in the training procedure outside of model. (:default: :obj:`None`)
-        """
-        super().__init__(model=model)
+    def __init__(self, model: torch.nn.Module):
+        # super().__init__(model=model)
         self.model = model
-
-        # Set activation function
-        # self.activation = (
-        #     lambda x: x if activation is None else activation
-        # )  # i.e. linear activation if none provided
 
     def get_explanation_graph(
         self,
@@ -159,49 +181,11 @@ class CAM(_BaseDecomposition):
         num_nodes: int = None,
         forward_kwargs: dict = {},
     ) -> Explanation:
-        """
-        Explain one graph prediction by the model.
-
-        Args:
-            x (torch.Tensor): Tensor of node features from the graph.
-            edge_index (torch.Tensor): Edge_index of graph.
-            label (int, optional): Label on which to compute the explanation for
-                this node. If `None`, the predicted label from the model will be
-                used. (default: :obj:`None`)
-            num_nodes (int, optional): number of nodes in graph (default: :obj:`None`)
-            forward_kwargs (dict, optional): Additional arguments to model.forward
-                beyond x and edge_index. Must be keyed on argument name.
-                (default: :obj:`{}`)
-
-        :rtype: :class:`graphxai.Explanation`
-
-        Returns:
-            exp (:class:`Explanation`): Explanation output from the method.
-                Fields are:
-                `feature_imp`: :obj:`None`
-                `node_imp`: :obj:`torch.Tensor, [num_nodes,]`
-                `edge_imp`: :obj:`None`
-                `graph`: :obj:`torch_geometric.data.Data`
-        """
-
         N = maybe_num_nodes(edge_index, num_nodes)
 
-        # Forward pass:
-        label = (
-            int(self.__forward_pass(x, edge_index, forward_kwargs).argmax(dim=1).item())
-            if label is None
-            else label
-        )
-
-        # Steps through model:
-        walk_steps, fc_step = self.extract_step(
-            x, edge_index, detach=True, split_fc=True, forward_kwargs=forward_kwargs
-        )
-
-        # Generate explanation for every node in graph
-        node_explanations = []
-        for n in range(N):
-            node_explanations.append(self.__exp_node(n, walk_steps, label))
+        final_conv_acts = self.model.final_conv_acts
+        final_conv_grads = self.model.final_conv_grads
+        node_explanations = self.__grad_cam(final_conv_acts, final_conv_grads)[:N]
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))
@@ -209,31 +193,10 @@ class CAM(_BaseDecomposition):
 
         return exp
 
-    def __forward_pass(self, x, edge_index, forward_kwargs={}):
-        # Forward pass:
-        self.model.eval()
-        pred = self.model(x, edge_index, **forward_kwargs)
-
-        return pred
-
-    def __exp_node(self, node_idx, walk_steps, predicted_c):
-        """
-        Gets explanation for one node
-        Assumes ReLU activation after last convolutiuonal layer
-        TODO: Fix activation function assumption
-        """
-        last_conv_layer = walk_steps[-1]
-
-        if isinstance(last_conv_layer["module"][0], GINConv):
-            weight_vec = (
-                last_conv_layer["module"][0].nn.weight[node_idx, :].detach()
-            )  # last_conv_layer['module'][0].lin.weight[predicted_c, :].detach()
-        elif isinstance(last_conv_layer["module"][0], GCNConv):
-            weight_vec = last_conv_layer["module"][0].lin.weight[node_idx, :].detach()
-        elif isinstance(last_conv_layer["module"][0], torch.nn.Linear):
-            weight_vec = last_conv_layer["module"][0].weight[node_idx, :].detach()
-
-        F_l_n = F.relu(last_conv_layer["input"][node_idx, :]).detach()
-        L_cam_n = F.relu(torch.matmul(weight_vec, F_l_n))
-
-        return L_cam_n.item()
+    def __grad_cam(self, final_conv_acts, final_conv_grads):
+        node_heat_map = []
+        alphas = torch.mean(final_conv_grads, axis=0)
+        for n in range(final_conv_acts.shape[0]):  # nth node
+            node_heat = F.relu(alphas @ final_conv_acts[n]).item()
+            node_heat_map.append(node_heat)
+        return node_heat_map

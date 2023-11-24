@@ -39,6 +39,8 @@ from settings.config import (
     DEVICE,
     PARAMETER_TIMESTAMP,
     PARAMETER_DATE,
+    MODEL_DATE,
+    MODEL_EPOCH,
 )
 
 
@@ -132,7 +134,6 @@ if __name__ == "__main__":
             )
 
             # Testing phase
-            # model_saver(e, model, FILE_NAME)
             model.eval()
             test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
 
@@ -146,6 +147,7 @@ if __name__ == "__main__":
                 e,
             )
             if e % 10 == 0 or e == 1:
+                model_saver(e, model, FILE_NAME)
                 _, _, _, train_accuracy, _, _ = calculate_metrics(
                     train_y_pred, train_y_true
                 )
@@ -163,6 +165,14 @@ if __name__ == "__main__":
         generate_plots(metric_results_dict, overwrite=True)
         generate_explanation_plots(test_dataset, model, overwrite=True)
     else:
+        # Load pretrained model
+        checkpoint = model_loader(FILE_NAME, MODEL_EPOCH, MODEL_DATE)
+        model.load_state_dict(checkpoint["model_state"])
+        model.final_conv_acts = checkpoint["final_conv_acts"]
+        model.final_conv_grads = checkpoint["final_conv_grads"]
+        # Evaluate model on test dataset
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
         print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
+        # Generate explanation plots
+        generate_explanation_plots(test_dataset, model, overwrite=True)
