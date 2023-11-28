@@ -20,10 +20,10 @@ from utils.utils import (
     generate_explanation_plots,
     reset_weights,
     train_test_splitter,
+    masked_graphs_loader,
 )
 from models.hyperparameter_tuning import objective_cv
 from torch_geometric.loader import DataLoader
-from torch_geometric.data import Data
 from models.train_model import ModelTrainer
 from models.test_model import ModelTester
 from settings.config import (
@@ -41,6 +41,7 @@ from settings.config import (
     PARAMETER_DATE,
     MODEL_DATE,
     MODEL_EPOCH,
+    CURRENT_DATE,
 )
 
 
@@ -146,8 +147,9 @@ if __name__ == "__main__":
                 test_y_pred,
                 e,
             )
+            model_saver(e, model, FILE_NAME)
             if e % 10 == 0 or e == 1:
-                model_saver(e, model, FILE_NAME)
+                # model_saver(e, model, FILE_NAME)
                 _, _, _, train_accuracy, _, _ = calculate_metrics(
                     train_y_pred, train_y_true
                 )
@@ -163,7 +165,22 @@ if __name__ == "__main__":
                     )
                 )
         generate_plots(metric_results_dict, overwrite=True)
-        generate_explanation_plots(test_dataset, model, overwrite=True)
+        generate_explanation_plots(
+            test_dataset,
+            model,
+            generate_masked_graphs=True,
+            filename=f"{FILE_NAME}_masked_graphs",
+            overwrite=True,
+        )
+        masked_graphs = masked_graphs_loader(
+            filename=f"{FILE_NAME}_masked_graphs", date=CURRENT_DATE
+        )
+        generate_explanation_plots(
+            masked_graphs,
+            model,
+            generate_masked_graphs=False,
+            filename=f"{FILE_NAME}_masked_graphs",
+        )
     else:
         # Load pretrained model
         checkpoint = model_loader(FILE_NAME, MODEL_EPOCH, MODEL_DATE)
@@ -175,4 +192,19 @@ if __name__ == "__main__":
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
         print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
         # Generate explanation plots
-        generate_explanation_plots(test_dataset, model, overwrite=True)
+        generate_explanation_plots(
+            test_dataset,
+            model,
+            generate_masked_graphs=True,
+            filename=f"{FILE_NAME}_masked_graphs",
+            overwrite=True,
+        )
+        masked_graphs = masked_graphs_loader(
+            filename=f"{FILE_NAME}_masked_graphs", date=MODEL_DATE
+        )
+        generate_explanation_plots(
+            masked_graphs,
+            model,
+            generate_masked_graphs=False,
+            filename=f"{FILE_NAME}_masked_graphs",
+        )

@@ -14,7 +14,11 @@ from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCo
 from graphxai.explanation import CAM
 
 
-def generate_explanation_plots(mutag_dataset, model, overwrite=True):
+def generate_explanation_plots(
+    mutag_dataset, model, generate_masked_graphs, filename, overwrite=True
+):
+    masked_graphs = []
+    exp = None
     for i, graph in enumerate(mutag_dataset):
         model.eval()
         with torch.no_grad():
@@ -28,29 +32,27 @@ def generate_explanation_plots(mutag_dataset, model, overwrite=True):
                 ),
             )
         predicted = torch.round(torch.sigmoid(prediction)).item()
-        # act = lambda x: torch.round(torch.sigmoid(x))
         cam = CAM(model)
         exp = cam.get_explanation_graph(
             graph.x,
             edge_index=graph.edge_index,
             label=graph.y,
-            forward_kwargs={
-                "batch_index": torch.zeros(
-                    1,
-                    dtype=torch.int64,
-                    device=DEVICE,
-                )
-            },
         )
-        # visualize_mol_explanation(
-        #     mol, exp.node_imp, atoms=atoms, ax=ax1, show=False, fig=fig
-        # )
+        if generate_masked_graphs:
+            masked_graphs.append(exp.generate_masked_graph(predicted, threshold=0))
+            # Export plots
+            cam_plot = CAMPlot(
+                x_label=None, y_label=None, title="Class Attention Map (CAM)"
+            ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
+            Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
+        else:
+            # Export plots
+            cam_plot = CAMPlot(
+                x_label=None, y_label=None, title="Class Attention Map (CAM)"
+            ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
+            Plot.export_figure(cam_plot, f"CAM/Masked_Graph{i}", overwrite=overwrite)
 
-        # Export plots
-        cam_plot = CAMPlot(
-            x_label=None, y_label=None, title="Class Attention Map (CAM)"
-        ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
-        Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
+    exp.save_masked_graph(masked_graphs, filename)
 
 
 def generate_optuna_plots(study):
@@ -297,6 +299,19 @@ def hyperparameter_loader(filename: str, date: str):
         return hyperparameters
     except Exception as e:
         print("Error loading hyperparameters: ", e)
+        return None
+
+
+def masked_graphs_loader(filename: str, date: str):
+    path = f"{ROOT_PATH}/data/MUTAG/masked_graphs/{date}/"
+    file_name = f"{filename}.pkl"
+    try:
+        with open(path + file_name, "rb") as f:
+            masked_graphs = pickle.load(f)
+        print(f"Masked graphs '{file_name}' is loaded")
+        return masked_graphs
+    except Exception as e:
+        print("Error loading masked graphs: ", e)
         return None
 
 

@@ -1,10 +1,13 @@
+import os
+import pickle
 import torch
 from torch_geometric.data import Data
-from torch_geometric.utils.num_nodes import maybe_num_nodes
 import torch.nn.functional as F
 from typing import Optional
 from sklearn import preprocessing
+from settings.config import CURRENT_DATE, DEVICE, ROOT_PATH
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -14,9 +17,6 @@ class Explanation:
         feature_imp: Optional[torch.tensor] = None,
         node_imp: Optional[torch.tensor] = None,
         edge_imp: Optional[torch.tensor] = None,
-        node_idx: Optional[torch.tensor] = None,
-        node_reference: Optional[torch.tensor] = None,
-        edge_reference: Optional[torch.tensor] = None,
         graph=None,
     ):
         # Establish basic properties
@@ -24,12 +24,47 @@ class Explanation:
         self.node_imp = node_imp
         self.edge_imp = edge_imp
 
-        # Only established if passed explicitly in init, not overwritten by enclosing subgraph unless explicitly specified
-        self.node_reference = node_reference
-        self.edge_reference = edge_reference
-
-        self.node_idx = node_idx  # Set this for node-level prediction explanations
         self.graph = graph
+
+    def generate_masked_graph(self, y_pred, threshold=0) -> Data:
+        important_node_idx = [i for i, v in enumerate(self.node_imp) if v > threshold]
+        print(self.node_imp)
+        masked_nodes = self.graph.x[important_node_idx]
+
+        # Create a mask indicating which elements are in the values_to_keep array for both rows
+        mask_row_0 = np.isin(self.graph.edge_index[0, :], important_node_idx)
+        mask_row_1 = np.isin(self.graph.edge_index[1, :], important_node_idx)
+
+        # Combine the masks using logical AND to ensure values match in both rows
+        final_mask = mask_row_0 & mask_row_1
+
+        # Use the mask to filter the edge index
+        masked_edge_index = self.graph.edge_index[:, final_mask]
+
+        masked_graph = Data(
+            x=masked_nodes,
+            edge_index=masked_edge_index,
+            y=self.graph.y,
+            **{"y_pred": y_pred},
+        )
+
+        return masked_graph
+
+    def save_masked_graph(self, masked_graphs: list[Data], filename: str):
+        path = f"{ROOT_PATH}/data/MUTAG/masked_graphs/{CURRENT_DATE}/"
+        file_name = f"{filename}.pkl"
+        try:
+            if os.path.exists(path):
+                with open(path + file_name, "wb") as f:
+                    pickle.dump(masked_graphs, f)
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+                with open(path + file_name, "wb") as f:
+                    pickle.dump(masked_graphs, f)
+            # print(f"Masked graphs '{file_name}' is saved")
+        except Exception as e:
+            print("Error saving masked graphs: ", e)
 
     def set_whole_graph(self, data: Data):
         """
@@ -60,7 +95,7 @@ class Explanation:
             else:
                 node_imp_heat = [agg_nodes(self.node_imp[n]) for n in G.nodes()]
 
-            draw_args["node_color"] = preprocessing.normalize([node_imp_heat])
+            draw_args["node_color"] = node_imp_heat
 
             atom_list = ["C", "N", "O", "F", "I", "Cl", "Br"]
             atom_map = {i: atom_list[i] for i in range(len(atom_list))}
@@ -178,22 +213,20 @@ class CAM:
         x: torch.Tensor,
         edge_index: torch.Tensor,
         label: int = None,
-        num_nodes: int = None,
-        forward_kwargs: dict = {},
     ) -> Explanation:
-        N = maybe_num_nodes(edge_index, num_nodes)
-
         final_conv_acts = self.model.final_conv_acts
         final_conv_grads = self.model.final_conv_grads
-        node_explanations = self.__grad_cam(final_conv_acts, final_conv_grads)[:N]
+        node_explanations = preprocessing.normalize(
+            [self.__cam(final_conv_acts, final_conv_grads)]
+        ).tolist()[0]
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))
-        exp.set_whole_graph(Data(x=x, edge_index=edge_index))
+        exp.set_whole_graph(Data(x=x, edge_index=edge_index, y=label))
 
         return exp
 
-    def __grad_cam(self, final_conv_acts, final_conv_grads):
+    def __cam(self, final_conv_acts, final_conv_grads):
         node_heat_map = []
         alphas = torch.mean(final_conv_grads, axis=0)
         for n in range(final_conv_acts.shape[0]):  # nth node
