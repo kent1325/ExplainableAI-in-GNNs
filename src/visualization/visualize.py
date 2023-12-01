@@ -122,7 +122,7 @@ class CAMPlot(Plot):
     def __init__(self, x_label: str, y_label: str, title: str) -> None:
         super().__init__(x_label, y_label, title)
 
-    def single_graph(self, exp, y_pred, y_true) -> None:
+    def single_graph(self, exp, y_pred, y_true, y_original_pred) -> None:
         # Create canvas
         fig, ax = super().plot()
 
@@ -131,11 +131,12 @@ class CAMPlot(Plot):
         ymin, ymax = ax.get_ylim()
         xmin, xmax = ax.get_xlim()
         ax.text(xmin, ymax - 0.1 * (ymax - ymin), f"Label = {y_true}")
-        ax.text(xmin, ymax - 0.15 * (ymax - ymin), f"Prediction  = {y_pred}")
-
-        # ax.plot(x, marker="o", markersize=3, linewidth=1.5, label=label)
-
-        # Set legend
-        # fig.legend(
-        #     loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax.transAxes
-        # )
+        if y_original_pred is not None:
+            ax.text(
+                xmin,
+                ymax - 0.2 * (ymax - ymin),
+                f"Original Prediction  = {y_original_pred}",
+            )
+            ax.text(xmin, ymax - 0.15 * (ymax - ymin), f"Masked Prediction  = {y_pred}")
+        else:
+            ax.text(xmin, ymax - 0.15 * (ymax - ymin), f"Prediction  = {y_pred}")

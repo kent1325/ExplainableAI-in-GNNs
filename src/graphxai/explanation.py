@@ -26,29 +26,37 @@ class Explanation:
 
         self.graph = graph
 
-    def generate_masked_graph(self, y_pred, threshold=0) -> Data:
-        important_node_idx = [i for i, v in enumerate(self.node_imp) if v > threshold]
-        print(self.node_imp)
-        masked_nodes = self.graph.x[important_node_idx]
+    def generate_masked_graph(
+        self, y_pred, y_masked_pred=None, threshold=0, is_important_mask=None
+    ) -> Data:
+        important_masked_graph = self.graph.clone().to(DEVICE)
+        unimportant_masked_graph = self.graph.clone().to(DEVICE)
 
-        # Create a mask indicating which elements are in the values_to_keep array for both rows
-        mask_row_0 = np.isin(self.graph.edge_index[0, :], important_node_idx)
-        mask_row_1 = np.isin(self.graph.edge_index[1, :], important_node_idx)
+        important_masked_node_idx = [
+            i for i, v in enumerate(self.node_imp) if v > threshold
+        ]
+        uninmportant_masked_node_idx = [
+            i for i, v in enumerate(self.node_imp) if v <= threshold
+        ]
 
-        # Combine the masks using logical AND to ensure values match in both rows
-        final_mask = mask_row_0 & mask_row_1
+        important_masked_graph.x[important_masked_node_idx] = 0
+        unimportant_masked_graph.x[uninmportant_masked_node_idx] = 0
 
-        # Use the mask to filter the edge index
-        masked_edge_index = self.graph.edge_index[:, final_mask]
-
-        masked_graph = Data(
-            x=masked_nodes,
-            edge_index=masked_edge_index,
-            y=self.graph.y,
-            **{"y_pred": y_pred},
+        important_masked_graph = Data(
+            x=important_masked_graph.x,
+            edge_index=important_masked_graph.edge_index,
+            y=important_masked_graph.y,
+            **{"y_pred": y_pred, "y_masked_pred": None},
         )
 
-        return masked_graph
+        unimportant_masked_graph = Data(
+            x=unimportant_masked_graph.x,
+            edge_index=unimportant_masked_graph.edge_index,
+            y=unimportant_masked_graph.y,
+            **{"y_pred": y_pred, "y_masked_pred": None},
+        )
+
+        return important_masked_graph, unimportant_masked_graph
 
     def save_masked_graph(self, masked_graphs: list[Data], filename: str):
         path = f"{ROOT_PATH}/data/MUTAG/masked_graphs/{CURRENT_DATE}/"
@@ -101,7 +109,10 @@ class Explanation:
             atom_map = {i: atom_list[i] for i in range(len(atom_list))}
             atoms = []
             for i in range(self.graph.x.shape[0]):
-                atoms.append(atom_map[self.graph.x[i, :].tolist().index(1)])
+                try:
+                    atoms.append(atom_map[self.graph.x[i, :].tolist().index(1)])
+                except ValueError as e:
+                    atoms.append("")
             draw_args["labels"] = {i: atoms[i] for i in range(len(G.nodes))}
 
         pos = nx.kamada_kawai_layout(G)
@@ -216,9 +227,7 @@ class CAM:
     ) -> Explanation:
         final_conv_acts = self.model.final_conv_acts
         final_conv_grads = self.model.final_conv_grads
-        node_explanations = preprocessing.normalize(
-            [self.__cam(final_conv_acts, final_conv_grads)]
-        ).tolist()[0]
+        node_explanations = self.__cam(final_conv_acts, final_conv_grads)
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))
@@ -232,4 +241,5 @@ class CAM:
         for n in range(final_conv_acts.shape[0]):  # nth node
             node_heat = F.relu(alphas @ final_conv_acts[n]).item()
             node_heat_map.append(node_heat)
-        return node_heat_map
+        normalized_node_heat_map = preprocessing.normalize([node_heat_map]).tolist()[0]
+        return normalized_node_heat_map

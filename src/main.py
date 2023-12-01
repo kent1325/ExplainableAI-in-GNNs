@@ -20,7 +20,7 @@ from utils.utils import (
     generate_explanation_plots,
     reset_weights,
     train_test_splitter,
-    masked_graphs_loader,
+    calculate_evaluation_metrics,
 )
 from models.hyperparameter_tuning import objective_cv
 from torch_geometric.loader import DataLoader
@@ -147,7 +147,9 @@ if __name__ == "__main__":
                 test_y_pred,
                 e,
             )
+
             model_saver(e, model, FILE_NAME)
+
             if e % 10 == 0 or e == 1:
                 # model_saver(e, model, FILE_NAME)
                 _, _, _, train_accuracy, _, _ = calculate_metrics(
@@ -165,21 +167,11 @@ if __name__ == "__main__":
                     )
                 )
         generate_plots(metric_results_dict, overwrite=True)
-        generate_explanation_plots(
+        important_masked_graphs, unimportant_masked_graphs = generate_explanation_plots(
             test_dataset,
             model,
-            generate_masked_graphs=True,
             filename=f"{FILE_NAME}_masked_graphs",
             overwrite=True,
-        )
-        masked_graphs = masked_graphs_loader(
-            filename=f"{FILE_NAME}_masked_graphs", date=CURRENT_DATE
-        )
-        generate_explanation_plots(
-            masked_graphs,
-            model,
-            generate_masked_graphs=False,
-            filename=f"{FILE_NAME}_masked_graphs",
         )
     else:
         # Load pretrained model
@@ -192,19 +184,12 @@ if __name__ == "__main__":
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
         print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
         # Generate explanation plots
-        generate_explanation_plots(
+        masked_graphs = generate_explanation_plots(
             test_dataset,
             model,
-            generate_masked_graphs=True,
             filename=f"{FILE_NAME}_masked_graphs",
             overwrite=True,
         )
-        masked_graphs = masked_graphs_loader(
-            filename=f"{FILE_NAME}_masked_graphs", date=MODEL_DATE
-        )
-        generate_explanation_plots(
-            masked_graphs,
-            model,
-            generate_masked_graphs=False,
-            filename=f"{FILE_NAME}_masked_graphs",
-        )
+        # Calculate evaluation metrics
+        fidelity_plus, fidelity_minus = calculate_evaluation_metrics(masked_graphs)
+        print(f"Fidelity+: {fidelity_plus}\nFidelity-: {fidelity_minus}")

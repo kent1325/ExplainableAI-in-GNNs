@@ -15,9 +15,14 @@ from graphxai.explanation import CAM
 
 
 def generate_explanation_plots(
-    mutag_dataset, model, generate_masked_graphs, filename, overwrite=True
+    mutag_dataset,
+    model,
+    filename,
+    threshold=0.1,
+    overwrite=True,
 ):
-    masked_graphs = []
+    important_masked_graphs = []
+    unimportant_masked_graphs = []
     exp = None
     for i, graph in enumerate(mutag_dataset):
         model.eval()
@@ -38,21 +43,58 @@ def generate_explanation_plots(
             edge_index=graph.edge_index,
             label=graph.y,
         )
-        if generate_masked_graphs:
-            masked_graphs.append(exp.generate_masked_graph(predicted, threshold=0))
-            # Export plots
-            cam_plot = CAMPlot(
-                x_label=None, y_label=None, title="Class Attention Map (CAM)"
-            ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
-            Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
-        else:
-            # Export plots
-            cam_plot = CAMPlot(
-                x_label=None, y_label=None, title="Class Attention Map (CAM)"
-            ).single_graph(exp=exp, y_pred=predicted, y_true=graph.y.item())
-            Plot.export_figure(cam_plot, f"CAM/Masked_Graph{i}", overwrite=overwrite)
+        masked_graphs = exp.generate_masked_graph(predicted, threshold=threshold)
+        important_masked_graphs.append(masked_graphs[0])
+        unimportant_masked_graphs.append(masked_graphs[1])
+        # Export plots
+        cam_plot = CAMPlot(
+            x_label=None, y_label=None, title="Class Attention Map (CAM)"
+        ).single_graph(
+            exp=exp, y_pred=predicted, y_true=graph.y.item(), y_original_pred=None
+        )
+        Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
+    exp.save_masked_graph(important_masked_graphs, filename + "_important")
+    exp.save_masked_graph(unimportant_masked_graphs, filename + "_unimportant")
 
-    exp.save_masked_graph(masked_graphs, filename)
+    combined_masked_graphs = [important_masked_graphs, unimportant_masked_graphs]
+    updated_masked_graphs = [[], []]
+    for i, mg in enumerate(combined_masked_graphs):
+        for j, graph in enumerate(mg):
+            model.eval()
+            with torch.no_grad():
+                prediction = model(
+                    graph.x,
+                    graph.edge_index,
+                    batch_index=torch.zeros(
+                        1,
+                        dtype=torch.int64,
+                        device=DEVICE,
+                    ),
+                )
+                predicted = torch.round(torch.sigmoid(prediction)).item()
+                cam = CAM(model)
+                exp = cam.get_explanation_graph(
+                    graph.x,
+                    edge_index=graph.edge_index,
+                    label=graph.y,
+                )
+                graph.y_masked_pred = predicted
+                updated_masked_graphs[i].append(graph)
+
+                # Export plots
+                cam_plot = CAMPlot(
+                    x_label=None, y_label=None, title="Class Attention Map (CAM)"
+                ).single_graph(
+                    exp=exp,
+                    y_pred=predicted,
+                    y_true=graph.y.item(),
+                    y_original_pred=graph.y_pred,
+                )
+                Plot.export_figure(
+                    cam_plot, f"CAM/Masked_Graph_{i}-{j}", overwrite=overwrite
+                )
+
+    return updated_masked_graphs
 
 
 def generate_optuna_plots(study):
@@ -70,6 +112,26 @@ def generate_optuna_plots(study):
     Plot.export_figure(ovm.plot_contour(study), "contour", overwrite=True)
     Plot.export_figure(ovm.plot_edf(study), "edf", overwrite=True)
     Plot.export_figure(ovm.plot_rank(study), "rank", overwrite=True)
+
+
+def calculate_evaluation_metrics(masked_graphs):
+    fidelity_plus = 0
+    fidelity_minus = 0
+    for i, mg in enumerate(masked_graphs):
+        for j, graph in enumerate(mg):
+            if i == 0:
+                fidelity_plus += np.sum(graph.y_pred == graph.y.item()) - np.sum(
+                    graph.y_masked_pred == graph.y.item()
+                )
+            else:
+                fidelity_minus += np.sum(graph.y_pred == graph.y.item()) - np.sum(
+                    graph.y_masked_pred == graph.y.item()
+                )
+
+    fidelity_plus = fidelity_plus / len(masked_graphs[0])
+    fidelity_minus = fidelity_minus / len(masked_graphs[1])
+
+    return fidelity_plus, fidelity_minus
 
 
 def calculate_metrics(y_pred, y_true):
