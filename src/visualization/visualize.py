@@ -122,12 +122,14 @@ class CAMPlot(Plot):
     def __init__(self, x_label: str, y_label: str, title: str) -> None:
         super().__init__(x_label, y_label, title)
 
-    def single_graph(self, exp, y_pred, y_true, y_original_pred) -> None:
+    def single_graph(
+        self, exp, y_pred, y_true, y_original_pred, use_node_importance=False
+    ) -> None:
         # Create canvas
         fig, ax = super().plot()
 
         # Input values
-        exp.visualize_graph(ax=ax)
+        exp.visualize_graph(ax=ax, use_node_importance=use_node_importance)
         ymin, ymax = ax.get_ylim()
         xmin, xmax = ax.get_xlim()
         ax.text(xmin, ymax - 0.1 * (ymax - ymin), f"Label = {y_true}")

@@ -3,6 +3,8 @@ import pickle
 import torch
 import warnings
 
+from graphxai.explanation_metrics import fidelity, contrastivity, sparsity
+
 warnings.filterwarnings("ignore")
 from datetime import datetime
 from settings.config import ROOT_PATH, CURRENT_DATE, DEVICE
@@ -50,7 +52,11 @@ def generate_explanation_plots(
         cam_plot = CAMPlot(
             x_label=None, y_label=None, title="Class Attention Map (CAM)"
         ).single_graph(
-            exp=exp, y_pred=predicted, y_true=graph.y.item(), y_original_pred=None
+            exp=exp,
+            y_pred=predicted,
+            y_true=graph.y.item(),
+            y_original_pred=None,
+            use_node_importance=True,
         )
         Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
     exp.save_masked_graph(important_masked_graphs, filename + "_important")
@@ -115,23 +121,11 @@ def generate_optuna_plots(study):
 
 
 def calculate_evaluation_metrics(masked_graphs):
-    fidelity_plus = 0
-    fidelity_minus = 0
-    for i, mg in enumerate(masked_graphs):
-        for j, graph in enumerate(mg):
-            if i == 0:
-                fidelity_plus += np.sum(graph.y_pred == graph.y.item()) - np.sum(
-                    graph.y_masked_pred == graph.y.item()
-                )
-            else:
-                fidelity_minus += np.sum(graph.y_pred == graph.y.item()) - np.sum(
-                    graph.y_masked_pred == graph.y.item()
-                )
+    fidelity_plus, fidelity_minus = fidelity(masked_graphs)
+    sparsity_score = sparsity(masked_graphs[0])
+    contrastivity_score = contrastivity(masked_graphs)
 
-    fidelity_plus = fidelity_plus / len(masked_graphs[0])
-    fidelity_minus = fidelity_minus / len(masked_graphs[1])
-
-    return fidelity_plus, fidelity_minus
+    return fidelity_plus, fidelity_minus, sparsity_score, contrastivity_score
 
 
 def calculate_metrics(y_pred, y_true):

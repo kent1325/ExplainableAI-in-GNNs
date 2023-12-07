@@ -83,7 +83,9 @@ class Explanation:
         """
         self.graph = data
 
-    def visualize_graph(self, ax=None, show=False, agg_nodes=torch.mean):
+    def visualize_graph(
+        self, ax=None, show=False, agg_nodes=torch.mean, use_node_importance=False
+    ):
         """
         Draws the graph of the Explanation
 
@@ -95,25 +97,25 @@ class Explanation:
         G = self.__to_networkx_conv(self.graph, to_undirected=True)
 
         draw_args = dict()
+        atom_list = ["C", "N", "O", "F", "I", "Cl", "Br"]
+        atom_map = {i: atom_list[i] for i in range(len(atom_list))}
+        atoms = []
+        for i in range(self.graph.x.shape[0]):
+            try:
+                atoms.append(atom_map[self.graph.x[i, :].tolist().index(1)])
+            except ValueError as e:
+                atoms.append("")
+        draw_args["labels"] = {i: atoms[i] for i in range(len(G.nodes))}
+        draw_args["node_color"] = [0 for n in G.nodes()]
 
         # Node weights defined by node_imp:
-        if self.node_imp is not None:
+        if self.node_imp is not None and use_node_importance:
             if isinstance(self.node_imp, torch.Tensor):
                 node_imp_heat = [agg_nodes(self.node_imp[n]).item() for n in G.nodes()]
             else:
                 node_imp_heat = [agg_nodes(self.node_imp[n]) for n in G.nodes()]
 
             draw_args["node_color"] = node_imp_heat
-
-            atom_list = ["C", "N", "O", "F", "I", "Cl", "Br"]
-            atom_map = {i: atom_list[i] for i in range(len(atom_list))}
-            atoms = []
-            for i in range(self.graph.x.shape[0]):
-                try:
-                    atoms.append(atom_map[self.graph.x[i, :].tolist().index(1)])
-                except ValueError as e:
-                    atoms.append("")
-            draw_args["labels"] = {i: atoms[i] for i in range(len(G.nodes))}
 
         pos = nx.kamada_kawai_layout(G)
         ec = nx.draw_networkx_edges(G, pos, alpha=0.2)

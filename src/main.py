@@ -191,5 +191,7 @@ if __name__ == "__main__":
             overwrite=True,
         )
         # Calculate evaluation metrics
-        fidelity_plus, fidelity_minus = calculate_evaluation_metrics(masked_graphs)
+        fidelity_plus, fidelity_minus, _, _ = calculate_evaluation_metrics(
+            masked_graphs
+        )
         print(f"Fidelity+: {fidelity_plus}\nFidelity-: {fidelity_minus}")
