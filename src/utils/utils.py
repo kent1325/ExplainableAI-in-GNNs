@@ -38,11 +38,13 @@ def generate_explanation_plots(
                     device=DEVICE,
                 ),
             )
-        predicted = torch.round(torch.sigmoid(prediction)).item()
+        # predicted = torch.round(torch.sigmoid(prediction)).item()
+        predicted = prediction.max(dim=1)[1]
         cam = CAM(model)
         exp = cam.get_explanation_graph(
             graph.x,
             edge_index=graph.edge_index,
+            prediction=predicted.item(),
             label=graph.y,
         )
         masked_graphs = exp.generate_masked_graph(predicted, threshold=threshold)
@@ -77,11 +79,13 @@ def generate_explanation_plots(
                         device=DEVICE,
                     ),
                 )
-                predicted = torch.round(torch.sigmoid(prediction)).item()
+                # predicted = torch.round(torch.sigmoid(prediction)).item()
+                predicted = prediction.max(dim=1)[1]
                 cam = CAM(model)
                 exp = cam.get_explanation_graph(
                     graph.x,
                     edge_index=graph.edge_index,
+                    prediction=predicted,
                     label=graph.y,
                 )
                 graph.y_masked_pred = predicted
@@ -123,9 +127,9 @@ def generate_optuna_plots(study):
 def calculate_evaluation_metrics(masked_graphs):
     fidelity_plus, fidelity_minus = fidelity(masked_graphs)
     sparsity_score = sparsity(masked_graphs[0])
-    contrastivity_score = contrastivity(masked_graphs)
+    # contrastivity_score = contrastivity(masked_graphs)
 
-    return fidelity_plus, fidelity_minus, sparsity_score, contrastivity_score
+    return fidelity_plus, fidelity_minus, sparsity_score  # , contrastivity_score
 
 
 def calculate_metrics(y_pred, y_true):

@@ -18,7 +18,7 @@ def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores_list = []
     labels = [y_vals.y for y_vals in train_dataset]
-    k_folds = trial.suggest_categorical("k_folds", [3, 5, 8, 10])
+    k_folds = trial.suggest_categorical("k_folds", [5])
     sk_fold = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=SEED)
 
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
@@ -27,9 +27,7 @@ def objective_cv(trial, model, train_dataset):
         print(f"\nFold: {fold}")
         print("====================================")
         # Generate the optimizers.
-        optimizer_name = trial.suggest_categorical(
-            "optimizer", ["Adam", "SGD", "RMSprop"]
-        )
+        optimizer_name = trial.suggest_categorical("optimizer", ["Adam"])
         lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
         weight_decay = trial.suggest_float("weight_decay", 1e-10, 1e-6, log=True)
         optimizer = getattr(optim, optimizer_name)(

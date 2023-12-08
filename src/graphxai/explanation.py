@@ -225,11 +225,15 @@ class CAM:
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        label: int = None,
+        prediction: int,
+        label: int,
     ) -> Explanation:
         final_conv_acts = self.model.final_conv_acts
         final_conv_grads = self.model.final_conv_grads
-        node_explanations = self.__cam(final_conv_acts, final_conv_grads)
+        model_output_weights = self.model.output.weight
+        node_explanations = self.__cam(
+            final_conv_acts, model_output_weights, prediction
+        )
 
         # Set Explanation class:
         exp = Explanation(node_imp=torch.tensor(node_explanations))
@@ -237,11 +241,14 @@ class CAM:
 
         return exp
 
-    def __cam(self, final_conv_acts, final_conv_grads):
+    def __cam(self, final_conv_acts, model_output_weights, prediction):
         node_heat_map = []
-        alphas = torch.mean(final_conv_grads, axis=0)
-        for n in range(final_conv_acts.shape[0]):  # nth node
-            node_heat = F.relu(alphas @ final_conv_acts[n]).item()
-            node_heat_map.append(node_heat)
-        normalized_node_heat_map = preprocessing.normalize([node_heat_map]).tolist()[0]
+        # for n in range(final_conv_acts.shape[0]):  # nth node
+        node_heat = np.dot(
+            np.array(final_conv_acts.tolist()),
+            np.array(model_output_weights[prediction].tolist()),
+        )
+        # node_heat_map.append(node_heat)
+        normalized_node_heat_map = preprocessing.normalize([node_heat]).tolist()[0]
+
         return normalized_node_heat_map

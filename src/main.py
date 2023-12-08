@@ -91,7 +91,7 @@ if __name__ == "__main__":
         mutag_dataset, TRAIN_SIZE, seed=SEED
     )
 
-    model = GCN(mutag_dataset.num_features).to(device=DEVICE)
+    model = GCN(mutag_dataset.num_features, mutag_dataset.num_classes).to(device=DEVICE)
     # print(model)
     # print(f"Number of parameters: {count_parameters(model)}")
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
             overwrite=True,
         )
         # Calculate evaluation metrics
-        fidelity_plus, fidelity_minus, _, _ = calculate_evaluation_metrics(
-            masked_graphs
-        )
-        print(f"Fidelity+: {fidelity_plus}\nFidelity-: {fidelity_minus}")
+        # fidelity_plus, fidelity_minus, _, _ = calculate_evaluation_metrics(
+        #     masked_graphs
+        # )
+        # print(f"Fidelity+: {fidelity_plus}\nFidelity-: {fidelity_minus}")

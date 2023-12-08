@@ -6,9 +6,9 @@ import torch.nn.functional as F
 
 
 class GCN(torch.nn.Module):
-    def __init__(self, feature_size):
+    def __init__(self, feature_size, num_of_classes):
         super(GCN, self).__init__()
-        embedding_size = 32
+        embedding_size = 7
 
         # Explanation variables
         self.final_conv_acts = None
@@ -17,7 +17,7 @@ class GCN(torch.nn.Module):
         # GCN Layers
         self.input = GCNConv(feature_size, embedding_size)
         self.conv1 = GCNConv(embedding_size, embedding_size)
-        self.output = Linear(embedding_size, 1)
+        self.output = Linear(embedding_size, num_of_classes)
 
     def activations_hook(self, grad):
         self.final_conv_grads = grad
@@ -26,11 +26,11 @@ class GCN(torch.nn.Module):
         out = self.input(x, edge_index)
         out = F.relu(out)
         with torch.enable_grad():
-            self.final_conv_acts = self.conv1(out, edge_index)
+            self.final_conv_acts = F.relu(self.conv1(out, edge_index))
         self.final_conv_acts.register_hook(self.activations_hook)
-        out = F.relu(self.final_conv_acts)
         out = gap(out, batch_index)
         out = self.output(out)
+        out = F.softmax(out, dim=1)
 
         return out
 

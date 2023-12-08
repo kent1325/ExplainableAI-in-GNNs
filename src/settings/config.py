@@ -13,20 +13,20 @@ DOTENV_PATH = os.path.normpath(os.path.join(ROOT_PATH, ".env"))
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Train, test, validation settings
-SEED = 42
-EPOCHS = 301
+SEED = 1233
+EPOCHS = 101
 TRAIN_SIZE = 0.8
 DO_HYPERPARAMETER_TUNING = False
 DO_TRAIN_MODEL = False
 
 # Parameter and Model path settings
-FILE_NAME = "best_param_model"
+FILE_NAME = "TEMP_MODEL"
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
-PARAMETER_TIMESTAMP = "141109"
-PARAMETER_DATE = "20231129"
-MODEL_DATE = "20231129"
-MODEL_EPOCH = 46
+PARAMETER_TIMESTAMP = "150736"
+PARAMETER_DATE = "20231208"
+MODEL_DATE = "20231208"
+MODEL_EPOCH = 34
 
 # Sampler options
-N_TRIALS = 2000
+N_TRIALS = 10
 SAMPLER = optuna.samplers.TPESampler()
