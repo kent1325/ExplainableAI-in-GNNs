@@ -20,13 +20,13 @@ DO_HYPERPARAMETER_TUNING = False
 DO_TRAIN_MODEL = False
 
 # Parameter and Model path settings
-FILE_NAME = "TEMP_MODEL"
+FILE_NAME = "new_parameters"
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
-PARAMETER_TIMESTAMP = "150736"
+PARAMETER_TIMESTAMP = "223248"
 PARAMETER_DATE = "20231208"
 MODEL_DATE = "20231208"
-MODEL_EPOCH = 34
+MODEL_EPOCH = 50
 
 # Sampler options
-N_TRIALS = 10
+N_TRIALS = 1000
 SAMPLER = optuna.samplers.TPESampler()

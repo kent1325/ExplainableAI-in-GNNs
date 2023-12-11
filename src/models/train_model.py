@@ -1,5 +1,5 @@
 import torch
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
+from torch.nn import CrossEntropyLoss
 import numpy as np
 import os
 import sys

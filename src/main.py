@@ -2,7 +2,7 @@ import torch
 import optuna
 from data.get_dataloader import MUTAGLoader
 import torch.optim as optim
-from networks.gnn_loader import GAT, GCN
+from networks.gnn_loader import GCN
 from networks.top_k_pool_GCN import GCN_pool_layers
 from dotenv import load_dotenv
 from torchmetrics.classification import BinaryConfusionMatrix

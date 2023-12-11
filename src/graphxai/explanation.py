@@ -242,13 +242,12 @@ class CAM:
         return exp
 
     def __cam(self, final_conv_acts, model_output_weights, prediction):
-        node_heat_map = []
-        # for n in range(final_conv_acts.shape[0]):  # nth node
-        node_heat = np.dot(
-            np.array(final_conv_acts.tolist()),
-            np.array(model_output_weights[prediction].tolist()),
-        )
-        # node_heat_map.append(node_heat)
-        normalized_node_heat_map = preprocessing.normalize([node_heat]).tolist()[0]
-
+        node_heat = torch.matmul(
+                            final_conv_acts,
+                            model_output_weights[prediction],
+                        )
+        
+        #normalized_node_heat_map = preprocessing.normalize([node_heat.detach().numpy()], norm="l1").tolist()[0]
+        normalized_node_heat_map = F.normalize(node_heat, dim=0)
+        
         return normalized_node_heat_map
