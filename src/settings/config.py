@@ -17,14 +17,14 @@ SEED = 1233
 EPOCHS = 101
 TRAIN_SIZE = 0.8
 DO_HYPERPARAMETER_TUNING = False
-DO_TRAIN_MODEL = False
+DO_TRAIN_MODEL = True
 
 # Parameter and Model path settings
-FILE_NAME = "new_parameters"
+FILE_NAME = "best_param_model"
 CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
-PARAMETER_TIMESTAMP = "223248"
-PARAMETER_DATE = "20231208"
-MODEL_DATE = "20231208"
+PARAMETER_TIMESTAMP = "141109"
+PARAMETER_DATE = "20231129"
+MODEL_DATE = "20231129"
 MODEL_EPOCH = 50
 
 # Sampler options

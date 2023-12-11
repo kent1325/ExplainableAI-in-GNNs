@@ -85,7 +85,7 @@ def generate_explanation_plots(
                 exp = cam.get_explanation_graph(
                     graph.x,
                     edge_index=graph.edge_index,
-                    prediction=predicted,
+                    prediction=predicted.item(),
                     label=graph.y,
                 )
                 graph.y_masked_pred = predicted
