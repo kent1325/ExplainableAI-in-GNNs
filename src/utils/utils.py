@@ -79,7 +79,6 @@ def generate_explanation_plots(
                         device=DEVICE,
                     ),
                 )
-                # predicted = torch.round(torch.sigmoid(prediction)).item()
                 predicted = prediction.max(dim=1)[1]
                 cam = CAM(model)
                 exp = cam.get_explanation_graph(
@@ -124,12 +123,12 @@ def generate_optuna_plots(study):
     Plot.export_figure(ovm.plot_rank(study), "rank", overwrite=True)
 
 
-def calculate_evaluation_metrics(masked_graphs):
+def calculate_evaluation_metrics(model, masked_graphs, test_dataset):
     fidelity_plus, fidelity_minus = fidelity(masked_graphs)
     sparsity_score = sparsity(masked_graphs[0])
-    # contrastivity_score = contrastivity(masked_graphs)
+    contrastivity_score = contrastivity(model, test_dataset)
 
-    return fidelity_plus, fidelity_minus, sparsity_score  # , contrastivity_score
+    return fidelity_plus, fidelity_minus, sparsity_score, contrastivity_score
 
 
 def calculate_metrics(y_pred, y_true):

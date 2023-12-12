@@ -25,7 +25,7 @@ CURRENT_DATE = datetime.date.today().strftime("%Y%m%d")
 PARAMETER_TIMESTAMP = "141109"
 PARAMETER_DATE = "20231129"
 MODEL_DATE = "20231129"
-MODEL_EPOCH = 50
+MODEL_EPOCH = 100
 
 # Sampler options
 N_TRIALS = 1000

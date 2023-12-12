@@ -166,13 +166,24 @@ if __name__ == "__main__":
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
                 )
-        generate_plots(metric_results_dict, overwrite=True)
-        important_masked_graphs, unimportant_masked_graphs = generate_explanation_plots(
+        # Generate explanation plots
+        masked_graphs = generate_explanation_plots(
             test_dataset,
             model,
             filename=f"{FILE_NAME}_masked_graphs",
             overwrite=True,
         )
+        # Calculate evaluation metrics
+        (
+            fidelity_plus,
+            fidelity_minus,
+            sparsity,
+            contrastivity,
+        ) = calculate_evaluation_metrics(model, masked_graphs, test_dataset)
+        print(
+            f"Fidelity+:\tmean: {fidelity_plus[0]}, std: {fidelity_plus[1]}\nFidelity-:\tmean: {fidelity_minus[0]}, std: {fidelity_minus[1]}\nSparsity:\tmean: {sparsity[0]}, std: {sparsity[1]}\nContrastivity:\tmean: {contrastivity[0]}, std: {contrastivity[1]}\n"
+        )
+
     else:
         # Load pretrained model
         checkpoint = model_loader(FILE_NAME, MODEL_EPOCH, MODEL_DATE)
@@ -191,7 +202,12 @@ if __name__ == "__main__":
             overwrite=True,
         )
         # Calculate evaluation metrics
-        # fidelity_plus, fidelity_minus, _, _ = calculate_evaluation_metrics(
-        #     masked_graphs
-        # )
-        # print(f"Fidelity+: {fidelity_plus}\nFidelity-: {fidelity_minus}")
+        (
+            fidelity_plus,
+            fidelity_minus,
+            sparsity,
+            contrastivity,
+        ) = calculate_evaluation_metrics(model, masked_graphs, test_dataset)
+        print(
+            f"Fidelity+:\tmean: {fidelity_plus[0]}, std: {fidelity_plus[1]}\nFidelity-:\tmean: {fidelity_minus[0]}, std: {fidelity_minus[1]}\nSparsity:\tmean: {sparsity[0]}, std: {sparsity[1]}\nContrastivity:\tmean: {contrastivity[0]}, std: {contrastivity[1]}\n"
+        )
