@@ -137,12 +137,12 @@ class CAMPlot(Plot):
             ax.text(
                 xmin,
                 ymax - 0.2 * (ymax - ymin),
-                f"Original Prediction  = {y_original_pred.item()}",
+                f"Masked Prediction  = {y_pred.item()}",
             )
             ax.text(
                 xmin,
                 ymax - 0.15 * (ymax - ymin),
-                f"Masked Prediction  = {y_pred.item()}",
+                f"Original Prediction  = {y_original_pred.item()}",
             )
         else:
             ax.text(xmin, ymax - 0.15 * (ymax - ymin), f"Prediction  = {y_pred.item()}")

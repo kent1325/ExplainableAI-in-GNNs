@@ -9,6 +9,7 @@ from settings.config import CURRENT_DATE, DEVICE, ROOT_PATH
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 
 class Explanation:
@@ -132,7 +133,9 @@ class Explanation:
             vmin=0,
             vmax=1,
         )
-        plt.colorbar(nc)
+        if use_node_importance:
+            plt.colorbar(nc)
+        
         plt.axis("off")
 
         if show:
@@ -248,6 +251,9 @@ class CAM:
                         )
         
         #normalized_node_heat_map = preprocessing.normalize([node_heat.detach().numpy()], norm="l1").tolist()[0]
-        normalized_node_heat_map = F.normalize(node_heat, dim=0)
+        #normalized_node_heat_map = F.normalize(node_heat, dim=0)
+        min_val = torch.min(node_heat)
+        max_val = torch.max(node_heat)
+        normalized_node_heat_map = (node_heat - min_val) / (max_val - min_val + 1e-16)
         
         return normalized_node_heat_map

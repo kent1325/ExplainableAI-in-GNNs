@@ -93,7 +93,7 @@ def generate_explanation_plots(
 
                 # Export plots
                 cam_plot = CAMPlot(
-                    x_label=None, y_label=None, title="Class Attention Map (CAM)"
+                    x_label=None, y_label=None, title="Masked Graph"
                 ).single_graph(
                     exp=exp,
                     y_pred=predicted,
