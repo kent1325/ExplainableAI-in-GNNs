@@ -77,7 +77,7 @@ def contrastivity(model, test_dataset, threshold=0.1):
             1 if v > threshold else 0 for i, v in enumerate(winner_norm_imp)
         ]
         loser_masking = [
-            1 if v <= threshold else 0 for i, v in enumerate(loser_norm_imp)
+            1 if v > threshold else 0 for i, v in enumerate(loser_norm_imp)
         ]
         ham_dist = sum(a != b for a, b in zip(winner_masking, loser_masking)) / len(
             winner_masking
