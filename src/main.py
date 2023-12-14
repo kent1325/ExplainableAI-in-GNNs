@@ -6,6 +6,7 @@ from networks.gnn_loader import GCN
 from networks.top_k_pool_GCN import GCN_pool_layers
 from dotenv import load_dotenv
 from torchmetrics.classification import BinaryConfusionMatrix
+from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
 from utils.utils import (
     calculate_metrics,
     count_parameters,
@@ -92,8 +93,6 @@ if __name__ == "__main__":
     )
 
     model = GCN(mutag_dataset.num_features, mutag_dataset.num_classes).to(device=DEVICE)
-    # print(model)
-    # print(f"Number of parameters: {count_parameters(model)}")
 
     # Perform k-fold cross validation to tune hyperparameters
     if DO_HYPERPARAMETER_TUNING:
@@ -113,7 +112,7 @@ if __name__ == "__main__":
         dataset=test_dataset, batch_size=hyperparameters["graph_batch_size"]
     )
 
-    optimizer = getattr(optim, hyperparameters["optimizer"])(
+    optimizer = getattr(optim, "Adam")(
         model.parameters(),
         lr=hyperparameters["lr"],
         weight_decay=hyperparameters["weight_decay"],
@@ -162,10 +161,9 @@ if __name__ == "__main__":
                     f"Epoch {e} | Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} | Train Acc: {train_accuracy:.3f} | Test Acc: {test_accuracy:.3f}"
                 )
                 print(
-                    torch.transpose(
                         BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1
                     )
-                )
+                
         # Generate explanation plots
         masked_graphs = generate_explanation_plots(
             test_dataset,
@@ -183,17 +181,23 @@ if __name__ == "__main__":
         print(
             f"Fidelity+:\tmean: {fidelity_plus[0]}, std: {fidelity_plus[1]}\nFidelity-:\tmean: {fidelity_minus[0]}, std: {fidelity_minus[1]}\nSparsity:\tmean: {sparsity[0]}, std: {sparsity[1]}\nContrastivity:\tmean: {contrastivity[0]}, std: {contrastivity[1]}\n"
         )
-
+        generate_plots(metric_results_dict, overwrite=True)
     else:
         # Load pretrained model
         checkpoint = model_loader(FILE_NAME, MODEL_EPOCH, MODEL_DATE)
         model.load_state_dict(checkpoint["model_state"])
         model.final_conv_acts = checkpoint["final_conv_acts"]
         model.final_conv_grads = checkpoint["final_conv_grads"]
+        
         # Evaluate model on test dataset
         model.eval()
         test_loss, test_y_pred, test_y_true = model_tester.test_model(test_loader)
-        print(torch.transpose(BinaryConfusionMatrix()(test_y_true, test_y_pred), 0, 1))
+        print(BinaryConfusionMatrix()(test_y_true, test_y_pred))
+        print("Accuracy:", Accuracy(task="binary")(test_y_true, test_y_pred))
+        print("Precision:", Precision(task="binary")(test_y_true, test_y_pred))
+        print("Recall:", Recall(task="binary")(test_y_true, test_y_pred))
+        print("MCC:", MatthewsCorrCoef(task="binary")(test_y_true, test_y_pred))
+        
         # Generate explanation plots
         masked_graphs = generate_explanation_plots(
             test_dataset,

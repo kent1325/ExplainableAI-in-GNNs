@@ -18,8 +18,8 @@ def objective_cv(trial, model, train_dataset):
     # Create arrays for storing results.
     scores_list = []
     labels = [y_vals.y for y_vals in train_dataset]
-    k_folds = trial.suggest_categorical("k_folds", [5])
-    sk_fold = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=SEED)
+    #k_folds = trial.suggest_categorical("k_folds", [5])
+    sk_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
 
     for fold, (cv_train_idx, cv_validation_idx) in enumerate(
         sk_fold.split(train_dataset, labels)
@@ -27,10 +27,10 @@ def objective_cv(trial, model, train_dataset):
         print(f"\nFold: {fold}")
         print("====================================")
         # Generate the optimizers.
-        optimizer_name = trial.suggest_categorical("optimizer", ["Adam"])
+        #optimizer_name = trial.suggest_categorical("optimizer", ["Adam", "SGD", "RMSprop"])
         lr = trial.suggest_float("lr", 1e-5, 1e-1, log=True)
-        weight_decay = trial.suggest_float("weight_decay", 1e-10, 1e-6, log=True)
-        optimizer = getattr(optim, optimizer_name)(
+        weight_decay = trial.suggest_float("weight_decay", 1e-10, 1e-1, log=True)
+        optimizer = getattr(optim, "Adam")(
             model.parameters(), lr=lr, weight_decay=weight_decay
         )
         # graph_batch_size = trial.suggest_int("graph_batch_size", 4, 32)

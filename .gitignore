@@ -95,3 +95,4 @@ target/
 artifacts/
 models/
 /reports/
+src/settings/config.py
