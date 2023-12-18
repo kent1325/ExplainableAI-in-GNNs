@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.nn import functional as F
 
 from settings.config import DEVICE
 
@@ -11,19 +12,14 @@ def fidelity(masked_graphs):
         for j, graph in enumerate(mg):
             if i == 0:
                 fidelity_plus.append(
-                    np.sum(graph.y_pred.item() == graph.y.item())
-                    - np.sum(graph.y_masked_pred.item() == graph.y.item())
+                    (graph.y_pred.item() == graph.y.item()) - (graph.y_masked_pred.item() == graph.y.item())
                 )
             else:
                 fidelity_minus.append(
-                    np.sum(graph.y_pred.item() == graph.y.item())
-                    - np.sum(graph.y_masked_pred.item() == graph.y.item())
+                    (graph.y_pred.item() == graph.y.item()) - (graph.y_masked_pred.item() == graph.y.item())
                 )
 
-    return (np.mean(fidelity_plus), np.std(fidelity_plus)), (
-        np.mean(fidelity_minus),
-        np.std(fidelity_minus),
-    )
+    return np.mean(fidelity_plus), np.mean(fidelity_minus)
 
 
 def sparsity(important_masked_graphs):
@@ -58,10 +54,9 @@ def contrastivity(model, test_dataset, threshold=0.1):
             model.final_conv_acts,
             model.output.weight[winner_class],
         )
-        min_val = torch.min(winner_node_importance)
-        max_val = torch.max(winner_node_importance)
-        winner_norm_imp = (winner_node_importance - min_val) / (
-            max_val - min_val + 1e-16
+        winner_node_importance = F.relu(winner_node_importance)
+        winner_norm_imp = (winner_node_importance) / (
+            torch.max(winner_node_importance) + 1e-16
         )
 
         loser_class = winner_class ^ 1
@@ -69,9 +64,8 @@ def contrastivity(model, test_dataset, threshold=0.1):
             model.final_conv_acts,
             model.output.weight[loser_class],
         )
-        min_val = torch.min(loser_node_importance)
-        max_val = torch.max(loser_node_importance)
-        loser_norm_imp = (loser_node_importance - min_val) / (max_val - min_val + 1e-16)
+        loser_node_importance = F.relu(loser_node_importance)
+        loser_norm_imp = (loser_node_importance) / (torch.max(winner_node_importance) + 1e-16)
 
         winner_masking = [
             1 if v > threshold else 0 for i, v in enumerate(winner_norm_imp)

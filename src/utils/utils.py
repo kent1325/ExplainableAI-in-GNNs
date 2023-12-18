@@ -13,6 +13,7 @@ from visualization.visualize import Plot, LinePlot, CAMPlot
 import optuna.visualization.matplotlib as ovm
 from sklearn.model_selection import train_test_split
 from torchmetrics import F1Score, Accuracy, Precision, Recall, AUROC, MatthewsCorrCoef
+from torchmetrics.classification import BinaryConfusionMatrix
 from graphxai.explanation import CAM
 
 
@@ -20,12 +21,16 @@ def generate_explanation_plots(
     mutag_dataset,
     model,
     filename,
-    threshold=0.1,
+    threshold=0.7,
     overwrite=True,
 ):
     important_masked_graphs = []
     unimportant_masked_graphs = []
     exp = None
+    
+    labels = []
+    preds = []
+    
     for i, graph in enumerate(mutag_dataset):
         model.eval()
         with torch.no_grad():
@@ -61,6 +66,10 @@ def generate_explanation_plots(
             use_node_importance=True,
         )
         Plot.export_figure(cam_plot, f"CAM/Graph{i}", overwrite=overwrite)
+        labels.append(graph.y.item())
+        preds.append(predicted.item())
+    
+    print(BinaryConfusionMatrix()(torch.IntTensor(labels), torch.IntTensor(preds)))
     exp.save_masked_graph(important_masked_graphs, filename + "_important")
     exp.save_masked_graph(unimportant_masked_graphs, filename + "_unimportant")
 
@@ -126,7 +135,7 @@ def generate_optuna_plots(study):
 def calculate_evaluation_metrics(model, masked_graphs, test_dataset):
     fidelity_plus, fidelity_minus = fidelity(masked_graphs)
     sparsity_score = sparsity(masked_graphs[0])
-    contrastivity_score = contrastivity(model, test_dataset)
+    contrastivity_score = contrastivity(model, test_dataset, threshold=0.7)
 
     return fidelity_plus, fidelity_minus, sparsity_score, contrastivity_score
 

@@ -225,14 +225,14 @@ class CAM:
         self.model = model
 
     def get_explanation_graph(
-        self,
-        x: torch.Tensor,
-        edge_index: torch.Tensor,
-        prediction: int,
-        label: int,
-    ) -> Explanation:
+            self,
+            x: torch.Tensor,
+            edge_index: torch.Tensor,
+            prediction: int,
+            label: int,
+        ) -> Explanation:
+        
         final_conv_acts = self.model.final_conv_acts
-        final_conv_grads = self.model.final_conv_grads
         model_output_weights = self.model.output.weight
         node_explanations = self.__cam(
             final_conv_acts, model_output_weights, prediction
@@ -250,10 +250,7 @@ class CAM:
                             model_output_weights[prediction],
                         )
         
-        #normalized_node_heat_map = preprocessing.normalize([node_heat.detach().numpy()], norm="l1").tolist()[0]
-        #normalized_node_heat_map = F.normalize(node_heat, dim=0)
-        min_val = torch.min(node_heat)
-        max_val = torch.max(node_heat)
-        normalized_node_heat_map = (node_heat - min_val) / (max_val - min_val + 1e-16)
+        node_heat = F.relu(node_heat)   # Setting negative values to 0
+        normalized_node_heat_map = (node_heat) / (torch.max(node_heat) + 1e-16)
         
         return normalized_node_heat_map

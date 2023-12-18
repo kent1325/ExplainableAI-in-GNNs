@@ -187,7 +187,6 @@ if __name__ == "__main__":
         checkpoint = model_loader(FILE_NAME, MODEL_EPOCH, MODEL_DATE)
         model.load_state_dict(checkpoint["model_state"])
         model.final_conv_acts = checkpoint["final_conv_acts"]
-        model.final_conv_grads = checkpoint["final_conv_grads"]
         
         # Evaluate model on test dataset
         model.eval()
@@ -213,5 +212,5 @@ if __name__ == "__main__":
             contrastivity,
         ) = calculate_evaluation_metrics(model, masked_graphs, test_dataset)
         print(
-            f"Fidelity+:\tmean: {fidelity_plus[0]}, std: {fidelity_plus[1]}\nFidelity-:\tmean: {fidelity_minus[0]}, std: {fidelity_minus[1]}\nSparsity:\tmean: {sparsity[0]}, std: {sparsity[1]}\nContrastivity:\tmean: {contrastivity[0]}, std: {contrastivity[1]}\n"
+            f"Fidelity+:\tScore: {fidelity_plus}, \nFidelity-:\tScore: {fidelity_minus} \nSparsity:\tmean: {sparsity[0]}, std: {sparsity[1]}\nContrastivity:\tmean: {contrastivity[0]}, std: {contrastivity[1]}\n"
         )
